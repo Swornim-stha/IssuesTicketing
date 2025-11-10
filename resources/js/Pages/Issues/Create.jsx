@@ -9,6 +9,7 @@ export default function Create({ auth, departments, users }) {
         department_id: "",
         assigned_to: "",
         attachment: null,
+        escalate_to_director: false,
     });
 
     const handleSubmit = (e) => {
@@ -182,6 +183,7 @@ export default function Create({ auth, departments, users }) {
                                             )
                                         }
                                         className="focus:shadow-outline w-full appearance-none rounded border px-3 py-2 leading-tight text-gray-700 shadow focus:outline-none"
+                                        disabled={data.escalate_to_director}
                                     >
                                         <option value="">Unassigned</option>
                                         {users.map((user) => (
@@ -198,6 +200,32 @@ export default function Create({ auth, departments, users }) {
                                             {errors.assigned_to}
                                         </p>
                                     )}
+                                </div>
+
+                                <div className="mb-4">
+                                    <label className="flex items-center">
+                                        <input
+                                            type="checkbox"
+                                            checked={data.escalate_to_director}
+                                            onChange={(e) => {
+                                                setData(
+                                                    "escalate_to_director",
+                                                    e.target.checked
+                                                );
+                                                if (e.target.checked) {
+                                                    setData("assigned_to", "");
+                                                }
+                                            }}
+                                            className="mr-2"
+                                        />
+                                        <span className="text-sm font-bold text-gray-700">
+                                            Escalate to Director
+                                        </span>
+                                    </label>
+                                    <p className="mt-1 text-xs text-gray-500">
+                                        Check this box to escalate this issue
+                                        directly to the director
+                                    </p>
                                 </div>
 
                                 <div className="mb-6">

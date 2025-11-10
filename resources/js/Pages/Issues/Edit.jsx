@@ -1,7 +1,13 @@
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Head, Link, useForm } from "@inertiajs/react";
 
-export default function Edit({ auth, issue, departments, users }) {
+export default function Edit({
+    auth,
+    issue,
+    departments,
+    users,
+    canChangeStatus,
+}) {
     const { data, setData, post, processing, errors } = useForm({
         title: issue.title,
         description: issue.description,
@@ -43,6 +49,15 @@ export default function Edit({ auth, issue, departments, users }) {
                                     Back to List
                                 </Link>
                             </div>
+
+                            {!canChangeStatus && (
+                                <div className="mb-4 rounded-lg bg-yellow-50 p-4">
+                                    <p className="text-sm text-yellow-800">
+                                        Note: Only the assigned person can
+                                        change the status of this issue.
+                                    </p>
+                                </div>
+                            )}
 
                             <form onSubmit={handleSubmit}>
                                 <div className="mb-4">
@@ -145,7 +160,8 @@ export default function Edit({ auth, issue, departments, users }) {
                                                     e.target.value
                                                 )
                                             }
-                                            className="focus:shadow-outline w-full appearance-none rounded border px-3 py-2 leading-tight text-gray-700 shadow focus:outline-none"
+                                            disabled={!canChangeStatus}
+                                            className="focus:shadow-outline w-full appearance-none rounded border px-3 py-2 leading-tight text-gray-700 shadow focus:outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
                                         >
                                             <option value="open">Open</option>
                                             <option value="in_progress">

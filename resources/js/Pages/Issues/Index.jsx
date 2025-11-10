@@ -22,6 +22,12 @@ export default function Index({ auth, issues }) {
         return colors[status] || "bg-gray-100 text-gray-800";
     };
 
+    const canDelete = (issue) => {
+        const isAdmin = auth.user?.roles?.some((role) => role.name === "admin");
+        const isCreator = issue.created_by === auth.user.id;
+        return isAdmin || isCreator;
+    };
+
     return (
         <AuthenticatedLayout
             header={
@@ -140,11 +146,7 @@ export default function Index({ auth, issues }) {
                                                         >
                                                             Edit
                                                         </Link>
-                                                        {auth.user?.roles?.some(
-                                                            (role) =>
-                                                                role.name ===
-                                                                "admin"
-                                                        ) && (
+                                                        {canDelete(issue) && (
                                                             <Link
                                                                 href={route(
                                                                     "issues.destroy",
@@ -153,6 +155,11 @@ export default function Index({ auth, issues }) {
                                                                 method="delete"
                                                                 as="button"
                                                                 className="text-red-600 hover:text-red-900"
+                                                                onBefore={() =>
+                                                                    confirm(
+                                                                        "Are you sure you want to delete this issue?"
+                                                                    )
+                                                                }
                                                             >
                                                                 Delete
                                                             </Link>
