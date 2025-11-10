@@ -30,7 +30,12 @@ export default function AuthenticatedLayout({ header, children }) {
                                 >
                                     Dashboard
                                 </NavLink>
-
+                                <NavLink
+                                    href={route("issues.index")}
+                                    active={route().current("issues.*")}
+                                >
+                                    Issues
+                                </NavLink>
                                 {user?.roles &&
                                     user.roles.some(
                                         (role) => role.name === "admin"
@@ -160,6 +165,35 @@ export default function AuthenticatedLayout({ header, children }) {
                                     Departments
                                 </ResponsiveNavLink>
                             )}
+                        <div className="space-y-1 pb-3 pt-2">
+                            <ResponsiveNavLink
+                                href={route("dashboard")}
+                                active={route().current("dashboard")}
+                            >
+                                Dashboard
+                            </ResponsiveNavLink>
+
+                            <ResponsiveNavLink
+                                href={route("issues.index")}
+                                active={route().current("issues.*")}
+                            >
+                                Issues
+                            </ResponsiveNavLink>
+
+                            {user?.roles &&
+                                user.roles.some(
+                                    (role) => role.name === "admin"
+                                ) && (
+                                    <ResponsiveNavLink
+                                        href={route("departments.index")}
+                                        active={route().current(
+                                            "departments.*"
+                                        )}
+                                    >
+                                        Departments
+                                    </ResponsiveNavLink>
+                                )}
+                        </div>
                     </div>
 
                     <div className="border-t border-gray-200 pb-1 pt-4">
