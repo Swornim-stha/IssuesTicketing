@@ -8,111 +8,113 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Auth;
 
 class IssueController extends Controller
 {
     public function index()
     {
-        $user = Auth::user();
+        $user = auth()->user();
 
-        // Admins can see all issues, users see only their created/assigned issues
-        if ($user->hasRole('admin')) {
+        if ($user->can('view all issues')) {
+            $issues = Issue::with(['department', 'creator', 'assignee'])->latest()->get();
+        } elseif ($user->can('view department issues')) {
             $issues = Issue::with(['department', 'creator', 'assignee'])
-                ->latest()
-                ->get();
+                ->where('department_id', $user->department_id)
+                ->orWhere('assigned_to', $user->id)
+                ->orWhere('created_by', $user->id)
+                ->latest()->get();
         } else {
             $issues = Issue::with(['department', 'creator', 'assignee'])
                 ->where('created_by', $user->id)
-                ->orWhere('assigned_to', $user->id)
-                ->latest()
-                ->get();
+                ->latest()->get();
         }
 
-        return Inertia::render('Issues/Index', [
-            'issues' => $issues
-        ]);
+        return Inertia::render('Issues/Index', ['issues' => $issues]);
     }
 
     public function create()
     {
+        abort_unless(auth()->user()->can('create issues'), 403);
+
         $departments = Department::where('is_active', true)->get();
-        $users = User::all();
+        $users = User::with('roles')->get();
 
         return Inertia::render('Issues/Create', [
             'departments' => $departments,
-            'users' => $users,
+            'users' => $users
         ]);
     }
 
     public function store(Request $request)
     {
+        abort_unless(auth()->user()->can('create issues'), 403);
+
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'required|string',
             'priority' => 'required|in:low,medium,high,critical',
             'department_id' => 'required|exists:departments,id',
             'assigned_to' => 'nullable|exists:users,id',
-            'attachment' => 'nullable|file|max:10240', // 10MB max
+            'attachment' => 'nullable|file|max:10240',
         ]);
 
-        $validated['created_by'] = Auth::id();
+        $validated['created_by'] = auth()->id();
         $validated['status'] = 'open';
 
-        // Handle file upload
         if ($request->hasFile('attachment')) {
             $file = $request->file('attachment');
             $filename = time() . '_' . $file->getClientOriginalName();
-            $path = $file->storeAs('attachments', $filename, 'public');
-            $validated['attachment'] = $path;
+            $validated['attachment'] = $file->storeAs('attachments', $filename, 'public');
         }
 
         Issue::create($validated);
-
-        return redirect()->route('issues.index')
-            ->with('success', 'Issue created successfully.');
+        return redirect()->route('issues.index')->with('success', 'Issue created.');
     }
 
     public function show(Issue $issue)
     {
-        // Check if user has permission to view this issue
-        $user = Auth::user();
-        if (!$user->hasRole('admin') && $issue->created_by !== $user->id && $issue->assigned_to !== $user->id) {
-            abort(403, 'Unauthorized to view this issue.');
+        $user = auth()->user();
+
+        if (!$user->can('view all issues')) {
+            if (
+                $user->can('view department issues') && $issue->department_id !== $user->department_id
+                && $issue->assigned_to !== $user->id && $issue->created_by !== $user->id
+            ) {
+                abort(403);
+            }
+            if ($user->can('view own issues') && $issue->created_by !== $user->id) {
+                abort(403);
+            }
         }
 
         $issue->load(['department', 'creator', 'assignee']);
-
-        return Inertia::render('Issues/Show', [
-            'issue' => $issue
-        ]);
+        return Inertia::render('Issues/Show', ['issue' => $issue]);
     }
 
     public function edit(Issue $issue)
     {
-        // Only admin or creator can edit
-        $user = Auth::user();
-        if (!$user->hasRole('admin') && $issue->created_by !== $user->id) {
-            abort(403, 'Unauthorized to edit this issue.');
+        $user = auth()->user();
+
+        if (!$user->can('edit issues')) {
+            abort(403);
         }
 
         $departments = Department::where('is_active', true)->get();
-        $users = User::all();
+        $users = User::with('roles')->get();
+        $canChangeStatus = $user->can('change issue status') &&
+            ($user->can('view all issues') || $issue->assigned_to === $user->id);
 
         return Inertia::render('Issues/Edit', [
             'issue' => $issue,
             'departments' => $departments,
             'users' => $users,
+            'canChangeStatus' => $canChangeStatus
         ]);
     }
 
     public function update(Request $request, Issue $issue)
     {
-        // Only admin or creator can update
-        $user = Auth::user();
-        if (!$user->hasRole('admin') && $issue->created_by !== $user->id) {
-            abort(403, 'Unauthorized to update this issue.');
-        }
+        abort_unless(auth()->user()->can('edit issues'), 403);
 
         $validated = $request->validate([
             'title' => 'required|string|max:255',
@@ -124,45 +126,31 @@ class IssueController extends Controller
             'attachment' => 'nullable|file|max:10240',
         ]);
 
-        // Handle file upload
         if ($request->hasFile('attachment')) {
-            // Delete old attachment if exists
             if ($issue->attachment) {
                 Storage::disk('public')->delete($issue->attachment);
             }
-
             $file = $request->file('attachment');
             $filename = time() . '_' . $file->getClientOriginalName();
-            $path = $file->storeAs('attachments', $filename, 'public');
-            $validated['attachment'] = $path;
+            $validated['attachment'] = $file->storeAs('attachments', $filename, 'public');
         }
 
-        // If status changed to resolved, set resolved_at timestamp
         if ($validated['status'] === 'resolved' && $issue->status !== 'resolved') {
             $validated['resolved_at'] = now();
         }
 
         $issue->update($validated);
-
-        return redirect()->route('issues.index')
-            ->with('success', 'Issue updated successfully.');
+        return redirect()->route('issues.index')->with('success', 'Issue updated.');
     }
 
     public function destroy(Issue $issue)
     {
-        // Only admin can delete
-        if (!Auth::user()->hasRole('admin')) {
-            abort(403, 'Unauthorized to delete this issue.');
-        }
+        abort_unless(auth()->user()->can('delete issues'), 403);
 
-        // Delete attachment if exists
         if ($issue->attachment) {
             Storage::disk('public')->delete($issue->attachment);
         }
-
         $issue->delete();
-
-        return redirect()->route('issues.index')
-            ->with('success', 'Issue deleted successfully.');
+        return redirect()->route('issues.index')->with('success', 'Issue deleted.');
     }
 }

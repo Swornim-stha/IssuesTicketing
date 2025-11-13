@@ -3,6 +3,8 @@
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\IssueController;
+use App\Http\Controllers\UserManagementController;
+use App\Http\Controllers\RoleManagementController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -24,24 +26,25 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-});
 
-// Admin routes - only admins can access departments
-Route::middleware(['auth', 'admin'])->group(function () {
-    Route::resource('departments', DepartmentController::class);
-});
-Route::middleware('auth')->group(function () {
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-
-    // Issues routes - all authenticated users can access
+    // Issues
     Route::resource('issues', IssueController::class);
-});
 
-// Admin routes - only admins can access departments
-Route::middleware(['auth', 'admin'])->group(function () {
-    Route::resource('departments', DepartmentController::class);
+    // Departments
+    Route::resource('departments', DepartmentController::class)->middleware('can:view departments');
+
+    // Users
+    Route::middleware('can:view users')->group(function () {
+        Route::get('users', [UserManagementController::class, 'index'])->name('users.index');
+        Route::get('users/{user}/edit', [UserManagementController::class, 'edit'])->name('users.edit')->middleware('can:edit users');
+        Route::put('users/{user}', [UserManagementController::class, 'update'])->name('users.update')->middleware('can:edit users');
+        Route::delete('users/{user}', [UserManagementController::class, 'destroy'])->name('users.destroy')->middleware('can:delete users');
+    });
+
+    // Roles
+    Route::middleware('can:view roles')->group(function () {
+        Route::resource('roles', RoleManagementController::class);
+    });
 });
 
 require __DIR__ . '/auth.php';

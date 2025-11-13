@@ -7,8 +7,6 @@ use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
 {
-    // ... existing code ...
-
     public function share(Request $request): array
     {
         return [
@@ -18,7 +16,7 @@ class HandleInertiaRequests extends Middleware
                     'id' => $request->user()->id,
                     'name' => $request->user()->name,
                     'email' => $request->user()->email,
-                    'roles' => $request->user()->roles->pluck('name'),
+                    'roles' => $request->user()->roles->load('permissions'),
                 ] : null,
             ],
         ];

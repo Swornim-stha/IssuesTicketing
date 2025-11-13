@@ -6,10 +6,22 @@ import { Link, usePage } from "@inertiajs/react";
 import { useState } from "react";
 
 export default function AuthenticatedLayout({ header, children }) {
-    const user = usePage().props.auth.user;
+    const { auth } = usePage().props;
+    const user = auth.user;
 
     const [showingNavigationDropdown, setShowingNavigationDropdown] =
         useState(false);
+
+    // Helper to check permissions
+    const hasPermission = (permissionName) => {
+        return user?.roles?.some((role) =>
+            role.permissions?.some((perm) => perm.name === permissionName)
+        );
+    };
+
+    const canViewDepartments = hasPermission("view departments");
+    const canViewUsers = hasPermission("view users");
+    const canViewRoles = hasPermission("view roles");
 
     return (
         <div className="min-h-screen bg-gray-100">
@@ -30,25 +42,42 @@ export default function AuthenticatedLayout({ header, children }) {
                                 >
                                     Dashboard
                                 </NavLink>
+
                                 <NavLink
                                     href={route("issues.index")}
                                     active={route().current("issues.*")}
                                 >
                                     Issues
                                 </NavLink>
-                                {user?.roles &&
-                                    user.roles.some(
-                                        (role) => role.name === "admin"
-                                    ) && (
-                                        <NavLink
-                                            href={route("departments.index")}
-                                            active={route().current(
-                                                "departments.*"
-                                            )}
-                                        >
-                                            Departments
-                                        </NavLink>
-                                    )}
+
+                                {canViewDepartments && (
+                                    <NavLink
+                                        href={route("departments.index")}
+                                        active={route().current(
+                                            "departments.*"
+                                        )}
+                                    >
+                                        Departments
+                                    </NavLink>
+                                )}
+
+                                {canViewUsers && (
+                                    <NavLink
+                                        href={route("users.index")}
+                                        active={route().current("users.*")}
+                                    >
+                                        Users
+                                    </NavLink>
+                                )}
+
+                                {canViewRoles && (
+                                    <NavLink
+                                        href={route("roles.index")}
+                                        active={route().current("roles.*")}
+                                    >
+                                        Roles
+                                    </NavLink>
+                                )}
                             </div>
                         </div>
 
@@ -62,7 +91,6 @@ export default function AuthenticatedLayout({ header, children }) {
                                                 className="inline-flex items-center rounded-md border border-transparent bg-white px-3 py-2 text-sm font-medium leading-4 text-gray-500 transition duration-150 ease-in-out hover:text-gray-700 focus:outline-none"
                                             >
                                                 {user.name}
-
                                                 <svg
                                                     className="-me-0.5 ms-2 h-4 w-4"
                                                     xmlns="http://www.w3.org/2000/svg"
@@ -153,47 +181,36 @@ export default function AuthenticatedLayout({ header, children }) {
                         >
                             Dashboard
                         </ResponsiveNavLink>
-
-                        {user?.roles &&
-                            user.roles.some(
-                                (role) => role.name === "admin"
-                            ) && (
-                                <ResponsiveNavLink
-                                    href={route("departments.index")}
-                                    active={route().current("departments.*")}
-                                >
-                                    Departments
-                                </ResponsiveNavLink>
-                            )}
-                        <div className="space-y-1 pb-3 pt-2">
+                        <ResponsiveNavLink
+                            href={route("issues.index")}
+                            active={route().current("issues.*")}
+                        >
+                            Issues
+                        </ResponsiveNavLink>
+                        {canViewDepartments && (
                             <ResponsiveNavLink
-                                href={route("dashboard")}
-                                active={route().current("dashboard")}
+                                href={route("departments.index")}
+                                active={route().current("departments.*")}
                             >
-                                Dashboard
+                                Departments
                             </ResponsiveNavLink>
-
+                        )}
+                        {canViewUsers && (
                             <ResponsiveNavLink
-                                href={route("issues.index")}
-                                active={route().current("issues.*")}
+                                href={route("users.index")}
+                                active={route().current("users.*")}
                             >
-                                Issues
+                                Users
                             </ResponsiveNavLink>
-
-                            {user?.roles &&
-                                user.roles.some(
-                                    (role) => role.name === "admin"
-                                ) && (
-                                    <ResponsiveNavLink
-                                        href={route("departments.index")}
-                                        active={route().current(
-                                            "departments.*"
-                                        )}
-                                    >
-                                        Departments
-                                    </ResponsiveNavLink>
-                                )}
-                        </div>
+                        )}
+                        {canViewRoles && (
+                            <ResponsiveNavLink
+                                href={route("roles.index")}
+                                active={route().current("roles.*")}
+                            >
+                                Roles
+                            </ResponsiveNavLink>
+                        )}
                     </div>
 
                     <div className="border-t border-gray-200 pb-1 pt-4">
@@ -205,7 +222,6 @@ export default function AuthenticatedLayout({ header, children }) {
                                 {user.email}
                             </div>
                         </div>
-
                         <div className="mt-3 space-y-1">
                             <ResponsiveNavLink href={route("profile.edit")}>
                                 Profile

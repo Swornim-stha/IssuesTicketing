@@ -1,5 +1,6 @@
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Head, Link, useForm } from "@inertiajs/react";
+import { useMemo } from "react";
 
 export default function Create({ auth, departments, users }) {
     const { data, setData, post, processing, errors } = useForm({
@@ -11,6 +12,18 @@ export default function Create({ auth, departments, users }) {
         attachment: null,
         escalate_to_director: false,
     });
+
+    // ✅ Department-based user filtering
+    const filteredUsers = useMemo(() => {
+        if (!data.department_id) return [];
+        return users.filter(
+            (user) =>
+                user.department_id === parseInt(data.department_id) ||
+                user.roles?.some((role) =>
+                    ["admin", "director"].includes(role.name)
+                )
+        );
+    }, [data.department_id, users]);
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -44,6 +57,7 @@ export default function Create({ auth, departments, users }) {
                             </div>
 
                             <form onSubmit={handleSubmit}>
+                                {/* Title */}
                                 <div className="mb-4">
                                     <label
                                         className="mb-2 block text-sm font-bold text-gray-700"
@@ -67,6 +81,7 @@ export default function Create({ auth, departments, users }) {
                                     )}
                                 </div>
 
+                                {/* Description */}
                                 <div className="mb-4">
                                     <label
                                         className="mb-2 block text-sm font-bold text-gray-700"
@@ -93,6 +108,7 @@ export default function Create({ auth, departments, users }) {
                                     )}
                                 </div>
 
+                                {/* Priority & Department */}
                                 <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2">
                                     <div>
                                         <label
@@ -166,6 +182,7 @@ export default function Create({ auth, departments, users }) {
                                     </div>
                                 </div>
 
+                                {/* Assign To */}
                                 <div className="mb-4">
                                     <label
                                         className="mb-2 block text-sm font-bold text-gray-700"
@@ -186,7 +203,7 @@ export default function Create({ auth, departments, users }) {
                                         disabled={data.escalate_to_director}
                                     >
                                         <option value="">Unassigned</option>
-                                        {users.map((user) => (
+                                        {filteredUsers.map((user) => (
                                             <option
                                                 key={user.id}
                                                 value={user.id}
@@ -202,6 +219,7 @@ export default function Create({ auth, departments, users }) {
                                     )}
                                 </div>
 
+                                {/* Escalate to Director */}
                                 <div className="mb-4">
                                     <label className="flex items-center">
                                         <input
@@ -228,6 +246,7 @@ export default function Create({ auth, departments, users }) {
                                     </p>
                                 </div>
 
+                                {/* Attachment */}
                                 <div className="mb-6">
                                     <label
                                         className="mb-2 block text-sm font-bold text-gray-700"
@@ -253,6 +272,7 @@ export default function Create({ auth, departments, users }) {
                                     )}
                                 </div>
 
+                                {/* Submit */}
                                 <div className="flex items-center justify-between">
                                     <button
                                         type="submit"
