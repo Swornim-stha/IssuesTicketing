@@ -1,7 +1,23 @@
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
-import { Head, Link } from "@inertiajs/react";
+import { Head, Link, useForm } from "@inertiajs/react";
+import { useState } from "react";
 
-export default function Show({ auth, issue }) {
+export default function Show({ auth, issue, canComment }) {
+    const [editingComment, setEditingComment] = useState(null);
+
+    const { data, setData, post, processing, reset } = useForm({
+        comment: "",
+    });
+
+    const {
+        data: editData,
+        setData: setEditData,
+        put,
+        processing: editProcessing,
+    } = useForm({
+        comment: "",
+    });
+
     const getPriorityColor = (priority) => {
         const colors = {
             low: "bg-gray-100 text-gray-800",
@@ -22,14 +38,33 @@ export default function Show({ auth, issue }) {
         return colors[status] || "bg-gray-100 text-gray-800";
     };
 
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        post(route("issues.comments.store", issue.id), {
+            onSuccess: () => reset(),
+        });
+    };
+
+    const handleEdit = (comment) => {
+        setEditingComment(comment.id);
+        setEditData("comment", comment.comment);
+    };
+
+    const handleUpdate = (e, commentId) => {
+        e.preventDefault();
+        put(route("comments.update", commentId), {
+            onSuccess: () => setEditingComment(null),
+        });
+    };
+
+    const handleDelete = (commentId) => {
+        if (confirm("Delete this comment?")) {
+            router.delete(route("comments.destroy", commentId));
+        }
+    };
+
     return (
-        <AuthenticatedLayout
-            header={
-                <h2 className="text-xl font-semibold leading-tight text-gray-800">
-                    Issue Details
-                </h2>
-            }
-        >
+        <AuthenticatedLayout>
             <Head title={`Issue: ${issue.title}`} />
 
             <div className="py-12">
@@ -51,13 +86,12 @@ export default function Show({ auth, issue }) {
                                         href={route("issues.index")}
                                         className="rounded bg-gray-500 px-4 py-2 font-bold text-white hover:bg-gray-700"
                                     >
-                                        Back to List
+                                        Back
                                     </Link>
                                 </div>
                             </div>
 
                             <div className="space-y-6">
-                                {/* Title */}
                                 <div>
                                     <h3 className="text-sm font-medium text-gray-500">
                                         Title
@@ -67,7 +101,6 @@ export default function Show({ auth, issue }) {
                                     </p>
                                 </div>
 
-                                {/* Status and Priority */}
                                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                                     <div>
                                         <h3 className="text-sm font-medium text-gray-500">
@@ -83,7 +116,6 @@ export default function Show({ auth, issue }) {
                                                 .toUpperCase()}
                                         </span>
                                     </div>
-
                                     <div>
                                         <h3 className="text-sm font-medium text-gray-500">
                                             Priority
@@ -98,7 +130,6 @@ export default function Show({ auth, issue }) {
                                     </div>
                                 </div>
 
-                                {/* Description */}
                                 <div>
                                     <h3 className="text-sm font-medium text-gray-500">
                                         Description
@@ -108,7 +139,6 @@ export default function Show({ auth, issue }) {
                                     </p>
                                 </div>
 
-                                {/* Department */}
                                 <div>
                                     <h3 className="text-sm font-medium text-gray-500">
                                         Department
@@ -118,7 +148,6 @@ export default function Show({ auth, issue }) {
                                     </p>
                                 </div>
 
-                                {/* Created By and Assigned To */}
                                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                                     <div>
                                         <h3 className="text-sm font-medium text-gray-500">
@@ -127,11 +156,7 @@ export default function Show({ auth, issue }) {
                                         <p className="mt-1 text-gray-900">
                                             {issue.creator?.name}
                                         </p>
-                                        <p className="text-sm text-gray-500">
-                                            {issue.creator?.email}
-                                        </p>
                                     </div>
-
                                     <div>
                                         <h3 className="text-sm font-medium text-gray-500">
                                             Assigned To
@@ -140,15 +165,9 @@ export default function Show({ auth, issue }) {
                                             {issue.assignee?.name ||
                                                 "Unassigned"}
                                         </p>
-                                        {issue.assignee && (
-                                            <p className="text-sm text-gray-500">
-                                                {issue.assignee.email}
-                                            </p>
-                                        )}
                                     </div>
                                 </div>
 
-                                {/* Attachment */}
                                 {issue.attachment && (
                                     <div>
                                         <h3 className="text-sm font-medium text-gray-500">
@@ -160,59 +179,152 @@ export default function Show({ auth, issue }) {
                                             rel="noopener noreferrer"
                                             className="mt-1 inline-flex items-center text-blue-600 hover:text-blue-800"
                                         >
-                                            <svg
-                                                className="mr-2 h-5 w-5"
-                                                fill="none"
-                                                stroke="currentColor"
-                                                viewBox="0 0 24 24"
-                                            >
-                                                <path
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
-                                                    strokeWidth="2"
-                                                    d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
-                                                />
-                                            </svg>
                                             View Attachment
                                         </a>
                                     </div>
                                 )}
 
-                                {/* Timestamps */}
-                                <div className="grid grid-cols-1 gap-6 border-t pt-6 md:grid-cols-3">
-                                    <div>
-                                        <h3 className="text-sm font-medium text-gray-500">
-                                            Created At
-                                        </h3>
-                                        <p className="mt-1 text-sm text-gray-900">
-                                            {new Date(
-                                                issue.created_at
-                                            ).toLocaleString()}
-                                        </p>
-                                    </div>
+                                {/* Comments Section */}
+                                <div className="border-t pt-6">
+                                    <h3 className="mb-4 text-lg font-semibold text-gray-900">
+                                        Comments
+                                    </h3>
 
-                                    <div>
-                                        <h3 className="text-sm font-medium text-gray-500">
-                                            Last Updated
-                                        </h3>
-                                        <p className="mt-1 text-sm text-gray-900">
-                                            {new Date(
-                                                issue.updated_at
-                                            ).toLocaleString()}
-                                        </p>
-                                    </div>
+                                    {issue.comments &&
+                                    issue.comments.length > 0 ? (
+                                        <div className="mb-6 space-y-4">
+                                            {issue.comments.map((comment) => (
+                                                <div
+                                                    key={comment.id}
+                                                    className="rounded-lg bg-gray-50 p-4"
+                                                >
+                                                    <div className="mb-2 flex items-start justify-between">
+                                                        <div>
+                                                            <span className="font-medium text-gray-900">
+                                                                {
+                                                                    comment.user
+                                                                        .name
+                                                                }
+                                                            </span>
+                                                            <span className="ml-2 text-sm text-gray-500">
+                                                                {new Date(
+                                                                    comment.created_at
+                                                                ).toLocaleString()}
+                                                            </span>
+                                                        </div>
+                                                        {comment.user_id ===
+                                                            auth.user.id && (
+                                                            <div className="flex space-x-2">
+                                                                <button
+                                                                    onClick={() =>
+                                                                        handleEdit(
+                                                                            comment
+                                                                        )
+                                                                    }
+                                                                    className="text-sm text-indigo-600 hover:text-indigo-900"
+                                                                >
+                                                                    Edit
+                                                                </button>
+                                                                <button
+                                                                    onClick={() =>
+                                                                        handleDelete(
+                                                                            comment.id
+                                                                        )
+                                                                    }
+                                                                    className="text-sm text-red-600 hover:text-red-900"
+                                                                >
+                                                                    Delete
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                    </div>
 
-                                    {issue.resolved_at && (
-                                        <div>
-                                            <h3 className="text-sm font-medium text-gray-500">
-                                                Resolved At
-                                            </h3>
-                                            <p className="mt-1 text-sm text-gray-900">
-                                                {new Date(
-                                                    issue.resolved_at
-                                                ).toLocaleString()}
-                                            </p>
+                                                    {editingComment ===
+                                                    comment.id ? (
+                                                        <form
+                                                            onSubmit={(e) =>
+                                                                handleUpdate(
+                                                                    e,
+                                                                    comment.id
+                                                                )
+                                                            }
+                                                            className="mt-2"
+                                                        >
+                                                            <textarea
+                                                                value={
+                                                                    editData.comment
+                                                                }
+                                                                onChange={(e) =>
+                                                                    setEditData(
+                                                                        "comment",
+                                                                        e.target
+                                                                            .value
+                                                                    )
+                                                                }
+                                                                rows="3"
+                                                                className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                            />
+                                                            <div className="mt-2 flex space-x-2">
+                                                                <button
+                                                                    type="submit"
+                                                                    disabled={
+                                                                        editProcessing
+                                                                    }
+                                                                    className="rounded bg-indigo-500 px-3 py-1 text-sm text-white hover:bg-indigo-600"
+                                                                >
+                                                                    Save
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() =>
+                                                                        setEditingComment(
+                                                                            null
+                                                                        )
+                                                                    }
+                                                                    className="rounded bg-gray-300 px-3 py-1 text-sm text-gray-700 hover:bg-gray-400"
+                                                                >
+                                                                    Cancel
+                                                                </button>
+                                                            </div>
+                                                        </form>
+                                                    ) : (
+                                                        <p className="text-gray-700">
+                                                            {comment.comment}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            ))}
                                         </div>
+                                    ) : (
+                                        <p className="mb-6 text-gray-500">
+                                            No comments yet.
+                                        </p>
+                                    )}
+
+                                    {canComment && (
+                                        <form onSubmit={handleSubmit}>
+                                            <textarea
+                                                value={data.comment}
+                                                onChange={(e) =>
+                                                    setData(
+                                                        "comment",
+                                                        e.target.value
+                                                    )
+                                                }
+                                                placeholder="Add a comment..."
+                                                rows="4"
+                                                className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                            />
+                                            <button
+                                                type="submit"
+                                                disabled={processing}
+                                                className="mt-2 rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600 disabled:opacity-50"
+                                            >
+                                                {processing
+                                                    ? "Adding..."
+                                                    : "Add Comment"}
+                                            </button>
+                                        </form>
                                     )}
                                 </div>
                             </div>

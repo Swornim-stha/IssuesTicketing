@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Issue;
 use App\Models\Department;
 use App\Models\User;
+use App\Models\Comment;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Storage;
@@ -93,8 +94,12 @@ class IssueController extends Controller
             }
         }
 
-        $issue->load(['department', 'creator', 'assignee']);
-        return Inertia::render('Issues/Show', ['issue' => $issue]);
+        $issue->load(['department', 'creator', 'assignee', 'comments.user']);
+
+        return Inertia::render('Issues/Show', [
+            'issue' => $issue,
+            'canComment' => $user->can('edit issues') || $issue->assigned_to === $user->id || $issue->created_by === $user->id
+        ]);
     }
 
     public function edit(Issue $issue)
@@ -158,5 +163,42 @@ class IssueController extends Controller
         }
         $issue->delete();
         return redirect()->route('issues.index')->with('success', 'Issue deleted.');
+    }
+    public function storeComment(Request $request, Issue $issue)
+    {
+        $validated = $request->validate([
+            'comment' => 'required|string|max:1000'
+        ]);
+
+        $issue->comments()->create([
+            'user_id' => auth()->id(),
+            'comment' => $validated['comment']
+        ]);
+
+        return back()->with('success', 'Comment added.');
+    }
+
+    public function updateComment(Request $request, Comment $comment)
+    {
+        if ($comment->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'comment' => 'required|string|max:1000'
+        ]);
+
+        $comment->update($validated);
+        return back()->with('success', 'Comment updated.');
+    }
+
+    public function destroyComment(Comment $comment)
+    {
+        if ($comment->user_id !== auth()->id() && !auth()->user()->can('delete issues')) {
+            abort(403);
+        }
+
+        $comment->delete();
+        return back()->with('success', 'Comment deleted.');
     }
 }

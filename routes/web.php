@@ -6,6 +6,7 @@ use App\Http\Controllers\IssueController;
 use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\RoleManagementController;
 use App\Http\Controllers\DashboardController;
+use App\Models\Comment;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -30,6 +31,9 @@ Route::middleware('auth')->group(function () {
 
     // Issues
     Route::resource('issues', IssueController::class);
+    Route::post('issues/{issue}/comments', [IssueController::class, 'storeComment'])->name('issues.comments.store');
+    Route::put('comments/{comment}', [IssueController::class, 'updateComment'])->name('comments.update');
+    Route::delete('comments/{comment}', [IssueController::class, 'destroyComment'])->name('comments.destroy');
 
     // Departments
     Route::resource('departments', DepartmentController::class)->middleware('can:view departments');
