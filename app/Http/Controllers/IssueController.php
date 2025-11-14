@@ -17,17 +17,21 @@ class IssueController extends Controller
         $user = auth()->user();
 
         if ($user->can('view all issues')) {
-            $issues = Issue::with(['department', 'creator', 'assignee'])->latest()->get();
+            $issues = Issue::with(['department', 'creator', 'assignee'])->whereNull('archived_at')->latest()->get();
             $departments = Department::where('is_active', true)->get();
         } elseif ($user->can('view department issues')) {
             $issues = Issue::with(['department', 'creator', 'assignee'])
-                ->where('department_id', $user->department_id)
-                ->orWhere('assigned_to', $user->id)
-                ->orWhere('created_by', $user->id)
+                ->whereNull('archived_at')
+                ->where(function ($query) use ($user) {
+                    $query->where('department_id', $user->department_id)
+                        ->orWhere('assigned_to', $user->id)
+                        ->orWhere('created_by', $user->id);
+                })
                 ->latest()->get();
             $departments = Department::where('is_active', true)->get();
         } else {
             $issues = Issue::with(['department', 'creator', 'assignee'])
+                ->whereNull('archived_at')
                 ->where('created_by', $user->id)
                 ->latest()->get();
             $departments = [];
@@ -150,6 +154,10 @@ class IssueController extends Controller
             $validated['resolved_at'] = now();
         }
 
+        if ($validated['status'] === 'closed' && $issue->status !== 'closed') {
+            $validated['closed_at'] = now();
+        }
+
         $issue->update($validated);
         return redirect()->route('issues.index')->with('success', 'Issue updated.');
     }
@@ -200,5 +208,16 @@ class IssueController extends Controller
 
         $comment->delete();
         return back()->with('success', 'Comment deleted.');
+    }
+
+    public function archived()
+    {
+        abort_unless(auth()->user()->can('view all issues'), 403);
+
+        $issues = Issue::with(['department', 'creator', 'assignee'])->whereNotNull('archived_at')->latest()->get();
+
+        return Inertia::render('Issues/Archived', [
+            'issues' => $issues,
+        ]);
     }
 }

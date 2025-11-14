@@ -1,5 +1,6 @@
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Head, Link } from "@inertiajs/react";
+import TruncatedText from "@/Components/TruncatedText";
 
 export default function Index({ auth, departments }) {
     return (
@@ -52,8 +53,7 @@ export default function Index({ auth, departments }) {
                                                 {department.name}
                                             </td>
                                             <td className="px-6 py-4">
-                                                {department.description ||
-                                                    "N/A"}
+                                                <TruncatedText text={department.description || 'N/A'} maxLength={100} />
                                             </td>
                                             <td className="whitespace-nowrap px-6 py-4">
                                                 <span

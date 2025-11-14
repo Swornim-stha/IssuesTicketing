@@ -1,5 +1,33 @@
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Head, Link, useForm } from "@inertiajs/react";
+import { useState } from "react";
+
+const ConfirmationDialog = ({ show, onConfirm, onCancel, title, message }) => {
+    if (!show) return null;
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="rounded-lg bg-white p-8 shadow-lg">
+                <h3 className="mb-4 text-lg font-bold">{title}</h3>
+                <p className="mb-6">{message}</p>
+                <div className="flex justify-end gap-4">
+                    <button
+                        onClick={onCancel}
+                        className="rounded bg-gray-300 px-4 py-2 font-bold text-gray-800 hover:bg-gray-400"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={onConfirm}
+                        className="rounded bg-red-500 px-4 py-2 font-bold text-white hover:bg-red-600"
+                    >
+                        Confirm
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 export default function Edit({
     auth,
@@ -19,9 +47,20 @@ export default function Edit({
         _method: "PUT",
     });
 
+    const [showConfirmation, setShowConfirmation] = useState(false);
+
     const handleSubmit = (e) => {
         e.preventDefault();
+        if (data.status === "closed" && issue.status !== "closed") {
+            setShowConfirmation(true);
+        } else {
+            post(route("issues.update", issue.id));
+        }
+    };
+
+    const handleConfirmClose = () => {
         post(route("issues.update", issue.id));
+        setShowConfirmation(false);
     };
 
     return (
@@ -33,6 +72,14 @@ export default function Edit({
             }
         >
             <Head title="Edit Issue" />
+
+            <ConfirmationDialog
+                show={showConfirmation}
+                onConfirm={handleConfirmClose}
+                onCancel={() => setShowConfirmation(false)}
+                title="Confirm Closing Issue"
+                message="Closing this issue will archive it at the end of the day. Are you sure?"
+            />
 
             <div className="py-12">
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">

@@ -10,6 +10,14 @@ export default function Index({ auth, issues, departments }) {
         search: "",
     });
 
+    const hasPermission = (permissionName) => {
+        return auth.user?.roles?.some((role) =>
+            role.permissions?.some((perm) => perm.name === permissionName)
+        );
+    };
+
+    const canViewAllIssues = hasPermission("view all issues");
+
     const filteredIssues = useMemo(() => {
         return issues.filter((issue) => {
             const matchesDepartment =
@@ -79,12 +87,22 @@ export default function Index({ auth, issues, departments }) {
                                 <h2 className="text-2xl font-semibold">
                                     Issues / Tickets
                                 </h2>
-                                <Link
-                                    href={route("issues.create")}
-                                    className="rounded bg-blue-500 px-4 py-2 font-bold text-white hover:bg-blue-700"
-                                >
-                                    Create New Issue
-                                </Link>
+                                <div className="flex gap-4">
+                                    {canViewAllIssues &&
+                                        <Link
+                                            href={route("issues.archived")}
+                                            className="rounded bg-gray-500 px-4 py-2 font-bold text-white hover:bg-gray-700"
+                                        >
+                                            Archived Issues
+                                        </Link>
+                                    }
+                                    <Link
+                                        href={route("issues.create")}
+                                        className="rounded bg-blue-500 px-4 py-2 font-bold text-white hover:bg-blue-700"
+                                    >
+                                        Create New Issue
+                                    </Link>
+                                </div>
                             </div>
 
                             {/* Filters */}

@@ -30,6 +30,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // Issues
+    Route::get('issues/archived', [IssueController::class, 'archived'])->name('issues.archived');
     Route::resource('issues', IssueController::class);
     Route::post('issues/{issue}/comments', [IssueController::class, 'storeComment'])->name('issues.comments.store');
     Route::put('comments/{comment}', [IssueController::class, 'updateComment'])->name('comments.update');
@@ -41,6 +42,7 @@ Route::middleware('auth')->group(function () {
     // Users
     Route::middleware('can:view users')->group(function () {
         Route::get('users', [UserManagementController::class, 'index'])->name('users.index');
+        Route::post('users', [UserManagementController::class, 'store'])->name('users.store')->middleware('can:edit users');
         Route::get('users/{user}/edit', [UserManagementController::class, 'edit'])->name('users.edit')->middleware('can:edit users');
         Route::put('users/{user}', [UserManagementController::class, 'update'])->name('users.update')->middleware('can:edit users');
         Route::delete('users/{user}', [UserManagementController::class, 'destroy'])->name('users.destroy')->middleware('can:delete users');

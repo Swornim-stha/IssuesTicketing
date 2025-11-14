@@ -1,7 +1,19 @@
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Head, Link } from "@inertiajs/react";
+import { useState } from "react";
+import CreateUserForm from "./CreateUserForm";
+import Modal from "@/Components/Modal";
 
-export default function Index({ auth, users }) {
+export default function Index({ auth, users, roles, departments }) {
+    const [showCreateUserModal, setShowCreateUserModal] = useState(false);
+    const [showSuccessNotification, setShowSuccessNotification] = useState(false);
+
+    const handleUserCreated = () => {
+        setShowCreateUserModal(false);
+        setShowSuccessNotification(true);
+        setTimeout(() => setShowSuccessNotification(false), 3000);
+    };
+
     return (
         <AuthenticatedLayout
             header={
@@ -20,7 +32,28 @@ export default function Index({ auth, users }) {
                                 <h2 className="text-2xl font-semibold">
                                     User Management
                                 </h2>
+                                <button
+                                    onClick={() => setShowCreateUserModal(true)}
+                                    className="rounded bg-blue-500 px-4 py-2 font-bold text-white hover:bg-blue-700"
+                                >
+                                    Create User
+                                </button>
                             </div>
+
+                            {showSuccessNotification && (
+                                <div className="mb-4 rounded-lg bg-green-100 p-4 text-green-800">
+                                    User created successfully!
+                                </div>
+                            )}
+
+                            <Modal show={showCreateUserModal} onClose={() => setShowCreateUserModal(false)}>
+                                <CreateUserForm
+                                    roles={roles}
+                                    departments={departments}
+                                    onSuccess={handleUserCreated}
+                                    onCancel={() => setShowCreateUserModal(false)}
+                                />
+                            </Modal>
 
                             <div className="overflow-x-auto">
                                 <table className="min-w-full divide-y divide-gray-200">

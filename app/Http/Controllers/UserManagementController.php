@@ -7,13 +7,43 @@ use App\Models\Department;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Spatie\Permission\Models\Role;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rules;
 
 class UserManagementController extends Controller
 {
     public function index()
     {
         $users = User::with(['roles', 'department'])->get();
-        return Inertia::render('UserManagement/Index', ['users' => $users]);
+        $roles = Role::all();
+        $departments = Department::where('is_active', true)->get();
+        return Inertia::render('UserManagement/Index', [
+            'users' => $users,
+            'roles' => $roles,
+            'departments' => $departments,
+        ]);
+    }
+
+    public function store(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'role' => 'required|exists:roles,name',
+            'department_id' => 'nullable|exists:departments,id',
+        ]);
+
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'department_id' => $request->department_id,
+        ]);
+
+        $user->assignRole($request->role);
+
+        return redirect()->route('users.index')->with('success', 'User created successfully.');
     }
 
     public function edit(User $user)

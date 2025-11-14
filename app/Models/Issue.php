@@ -19,10 +19,14 @@ class Issue extends Model
         'created_by',
         'assigned_to',
         'resolved_at',
+        'closed_at',
+        'archived_at',
     ];
 
     protected $casts = [
         'resolved_at' => 'datetime',
+        'closed_at' => 'datetime',
+        'archived_at' => 'datetime',
     ];
 
     // Relationships
@@ -39,5 +43,9 @@ class Issue extends Model
     public function assignee()
     {
         return $this->belongsTo(User::class, 'assigned_to');
+    }
+    public function comments()
+    {
+        return $this->hasMany(Comment::class);
     }
 }
