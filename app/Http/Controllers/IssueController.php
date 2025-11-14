@@ -17,19 +17,25 @@ class IssueController extends Controller
 
         if ($user->can('view all issues')) {
             $issues = Issue::with(['department', 'creator', 'assignee'])->latest()->get();
+            $departments = Department::where('is_active', true)->get();
         } elseif ($user->can('view department issues')) {
             $issues = Issue::with(['department', 'creator', 'assignee'])
                 ->where('department_id', $user->department_id)
                 ->orWhere('assigned_to', $user->id)
                 ->orWhere('created_by', $user->id)
                 ->latest()->get();
+            $departments = Department::where('is_active', true)->get();
         } else {
             $issues = Issue::with(['department', 'creator', 'assignee'])
                 ->where('created_by', $user->id)
                 ->latest()->get();
+            $departments = [];
         }
 
-        return Inertia::render('Issues/Index', ['issues' => $issues]);
+        return Inertia::render('Issues/Index', [
+            'issues' => $issues,
+            'departments' => $departments
+        ]);
     }
 
     public function create()

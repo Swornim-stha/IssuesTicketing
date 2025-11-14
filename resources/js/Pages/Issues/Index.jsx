@@ -1,7 +1,42 @@
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
-import { Head, Link } from "@inertiajs/react";
+import { Head, Link, router } from "@inertiajs/react";
+import { useState, useMemo } from "react";
 
-export default function Index({ auth, issues }) {
+export default function Index({ auth, issues, departments }) {
+    const [filters, setFilters] = useState({
+        department: "",
+        status: "",
+        priority: "",
+        search: "",
+    });
+
+    const filteredIssues = useMemo(() => {
+        return issues.filter((issue) => {
+            const matchesDepartment =
+                !filters.department ||
+                issue.department_id === parseInt(filters.department);
+            const matchesStatus =
+                !filters.status || issue.status === filters.status;
+            const matchesPriority =
+                !filters.priority || issue.priority === filters.priority;
+            const matchesSearch =
+                !filters.search ||
+                issue.title
+                    .toLowerCase()
+                    .includes(filters.search.toLowerCase()) ||
+                issue.description
+                    .toLowerCase()
+                    .includes(filters.search.toLowerCase());
+
+            return (
+                matchesDepartment &&
+                matchesStatus &&
+                matchesPriority &&
+                matchesSearch
+            );
+        });
+    }, [issues, filters]);
+
     const getPriorityColor = (priority) => {
         const colors = {
             low: "bg-gray-100 text-gray-800",
@@ -28,14 +63,12 @@ export default function Index({ auth, issues }) {
         return isAdmin || isCreator;
     };
 
+    const resetFilters = () => {
+        setFilters({ department: "", status: "", priority: "", search: "" });
+    };
+
     return (
-        <AuthenticatedLayout
-            header={
-                <h2 className="text-xl font-semibold leading-tight text-gray-800">
-                    Issues
-                </h2>
-            }
-        >
+        <AuthenticatedLayout>
             <Head title="Issues" />
 
             <div className="py-12">
@@ -52,6 +85,122 @@ export default function Index({ auth, issues }) {
                                 >
                                     Create New Issue
                                 </Link>
+                            </div>
+
+                            {/* Filters */}
+                            <div className="mb-6 grid grid-cols-1 gap-4 rounded-lg bg-gray-50 p-4 md:grid-cols-5">
+                                <div>
+                                    <label className="mb-1 block text-sm font-medium text-gray-700">
+                                        Search
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={filters.search}
+                                        onChange={(e) =>
+                                            setFilters({
+                                                ...filters,
+                                                search: e.target.value,
+                                            })
+                                        }
+                                        placeholder="Search issues..."
+                                        className="w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    />
+                                </div>
+
+                                {departments && departments.length > 0 && (
+                                    <div>
+                                        <label className="mb-1 block text-sm font-medium text-gray-700">
+                                            Department
+                                        </label>
+                                        <select
+                                            value={filters.department}
+                                            onChange={(e) =>
+                                                setFilters({
+                                                    ...filters,
+                                                    department: e.target.value,
+                                                })
+                                            }
+                                            className="w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                        >
+                                            <option value="">
+                                                All Departments
+                                            </option>
+                                            {departments.map((dept) => (
+                                                <option
+                                                    key={dept.id}
+                                                    value={dept.id}
+                                                >
+                                                    {dept.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
+
+                                <div>
+                                    <label className="mb-1 block text-sm font-medium text-gray-700">
+                                        Status
+                                    </label>
+                                    <select
+                                        value={filters.status}
+                                        onChange={(e) =>
+                                            setFilters({
+                                                ...filters,
+                                                status: e.target.value,
+                                            })
+                                        }
+                                        className="w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    >
+                                        <option value="">All Status</option>
+                                        <option value="open">Open</option>
+                                        <option value="in_progress">
+                                            In Progress
+                                        </option>
+                                        <option value="resolved">
+                                            Resolved
+                                        </option>
+                                        <option value="closed">Closed</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="mb-1 block text-sm font-medium text-gray-700">
+                                        Priority
+                                    </label>
+                                    <select
+                                        value={filters.priority}
+                                        onChange={(e) =>
+                                            setFilters({
+                                                ...filters,
+                                                priority: e.target.value,
+                                            })
+                                        }
+                                        className="w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    >
+                                        <option value="">All Priorities</option>
+                                        <option value="low">Low</option>
+                                        <option value="medium">Medium</option>
+                                        <option value="high">High</option>
+                                        <option value="critical">
+                                            Critical
+                                        </option>
+                                    </select>
+                                </div>
+
+                                <div className="flex items-end">
+                                    <button
+                                        onClick={resetFilters}
+                                        className="w-full rounded-md bg-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-300"
+                                    >
+                                        Reset Filters
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Results count */}
+                            <div className="mb-4 text-sm text-gray-600">
+                                Showing {filteredIssues.length} of{" "}
+                                {issues.length} issues
                             </div>
 
                             <div className="overflow-x-auto">
@@ -79,8 +228,9 @@ export default function Index({ auth, issues }) {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-200 bg-white">
-                                        {issues && issues.length > 0 ? (
-                                            issues.map((issue) => (
+                                        {filteredIssues &&
+                                        filteredIssues.length > 0 ? (
+                                            filteredIssues.map((issue) => (
                                                 <tr key={issue.id}>
                                                     <td className="px-6 py-4">
                                                         <div className="text-sm font-medium text-gray-900">
@@ -173,9 +323,8 @@ export default function Index({ auth, issues }) {
                                                     colSpan="6"
                                                     className="px-6 py-4 text-center text-gray-500"
                                                 >
-                                                    No issues found. Click
-                                                    "Create New Issue" to get
-                                                    started.
+                                                    No issues found matching
+                                                    your filters.
                                                 </td>
                                             </tr>
                                         )}
