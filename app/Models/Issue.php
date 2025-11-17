@@ -21,6 +21,7 @@ class Issue extends Model
         'resolved_at',
         'closed_at',
         'archived_at',
+        'notify_directors',
     ];
 
     protected $casts = [

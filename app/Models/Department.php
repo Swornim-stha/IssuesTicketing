@@ -13,6 +13,7 @@ class Department extends Model
         'name',
         'description',
         'is_active',
+        'head_id',
     ];
 
     protected $casts = [
@@ -22,5 +23,10 @@ class Department extends Model
     public function issues()
     {
         return $this->hasMany(Issue::class);
+    }
+
+    public function head()
+    {
+        return $this->belongsTo(User::class, 'head_id');
     }
 }
