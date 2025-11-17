@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\CommentCreated;
 use App\Models\Issue;
 use App\Models\Department;
 use App\Models\User;
@@ -9,6 +10,8 @@ use App\Models\Comment;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Storage;
+use App\Events\IssueCreated;
+use App\Events\IssueUpdated;
 
 class IssueController extends Controller
 {
@@ -78,7 +81,8 @@ class IssueController extends Controller
             $validated['attachment'] = $file->storeAs('attachments', $filename, 'public');
         }
 
-        Issue::create($validated);
+        $issue = Issue::create($validated);
+        event(new IssueCreated($issue));
         return redirect()->route('issues.index')->with('success', 'Issue created.');
     }
 
@@ -139,7 +143,10 @@ class IssueController extends Controller
             'department_id' => 'required|exists:departments,id',
             'assigned_to' => 'nullable|exists:users,id',
             'attachment' => 'nullable|file|max:10240',
+            'notify_directors' => 'nullable|boolean',
         ]);
+
+        $originalData = $issue->getOriginal();
 
         if ($request->hasFile('attachment')) {
             if ($issue->attachment) {
@@ -156,9 +163,11 @@ class IssueController extends Controller
 
         if ($validated['status'] === 'closed' && $issue->status !== 'closed') {
             $validated['closed_at'] = now();
+            $validated['archived_at'] = now();
         }
 
         $issue->update($validated);
+        event(new IssueUpdated($issue, $originalData, auth()->user()));
         return redirect()->route('issues.index')->with('success', 'Issue updated.');
     }
 
@@ -178,10 +187,12 @@ class IssueController extends Controller
             'comment' => 'required|string|max:1000'
         ]);
 
-        $issue->comments()->create([
+        $comment = $issue->comments()->create([
             'user_id' => auth()->id(),
             'comment' => $validated['comment']
         ]);
+
+        event(new CommentCreated($comment));
 
         return back()->with('success', 'Comment added.');
     }
