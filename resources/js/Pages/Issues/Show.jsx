@@ -159,11 +159,32 @@ export default function Show({ auth, issue, canComment }) {
                                     </div>
                                     <div>
                                         <h3 className="text-sm font-medium text-gray-500">
+                                            Created At:
+                                        </h3>
+
+                                        <p className="text-sm text-gray-900">
+                                            {new Date(
+                                                issue.created_at
+                                            ).toLocaleString()}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <h3 className="text-sm font-medium text-gray-500">
                                             Assigned To
                                         </h3>
                                         <p className="mt-1 text-gray-900">
                                             {issue.assignee?.name ||
                                                 "Unassigned"}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <h3 className="text-sm font-medium text-gray-500">
+                                            Last Updated:
+                                        </h3>
+                                        <p className="text-sm text-gray-900">
+                                            {new Date(
+                                                issue.updated_at
+                                            ).toLocaleString()}
                                         </p>
                                     </div>
                                 </div>

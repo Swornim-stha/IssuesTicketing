@@ -39,10 +39,13 @@ class IssueController extends Controller
                 ->latest()->get();
             $departments = [];
         }
+        $assigneeIds = $issues->pluck('assigned_to')->filter()->unique();
+        $users = User::whereIn('id', $assigneeIds)->get();
 
         return Inertia::render('Issues/Index', [
             'issues' => $issues,
-            'departments' => $departments
+            'departments' => $departments,
+            'users' => $users
         ]);
     }
 

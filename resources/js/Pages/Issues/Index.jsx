@@ -2,12 +2,14 @@ import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Head, Link, router } from "@inertiajs/react";
 import { useState, useMemo } from "react";
 
-export default function Index({ auth, issues, departments }) {
+export default function Index({ auth, issues, departments, users }) {
     const [filters, setFilters] = useState({
         department: "",
         status: "",
         priority: "",
         search: "",
+        assignee: "",
+        date: "",
     });
 
     const hasPermission = (permissionName) => {
@@ -35,12 +37,18 @@ export default function Index({ auth, issues, departments }) {
                 issue.description
                     .toLowerCase()
                     .includes(filters.search.toLowerCase());
+            const matchesAssignee =
+                !filters.assignee || issue.assigned_to === parseInt(filters.assignee);
+            const matchesDate =
+                !filters.date || issue.created_at.startsWith(filters.date);
 
             return (
                 matchesDepartment &&
                 matchesStatus &&
                 matchesPriority &&
-                matchesSearch
+                matchesSearch &&
+                matchesAssignee &&
+                matchesDate
             );
         });
     }, [issues, filters]);
@@ -72,7 +80,14 @@ export default function Index({ auth, issues, departments }) {
     };
 
     const resetFilters = () => {
-        setFilters({ department: "", status: "", priority: "", search: "" });
+        setFilters({
+            department: "",
+            status: "",
+            priority: "",
+            search: "",
+            assignee: "",
+            date: "",
+        });
     };
 
     return (
@@ -106,7 +121,7 @@ export default function Index({ auth, issues, departments }) {
                             </div>
 
                             {/* Filters */}
-                            <div className="mb-6 grid grid-cols-1 gap-4 rounded-lg bg-gray-50 p-4 md:grid-cols-5">
+                            <div className="mb-6 grid grid-cols-1 gap-4 rounded-lg bg-gray-50 p-4 md:grid-cols-7">
                                 <div>
                                     <label className="mb-1 block text-sm font-medium text-gray-700">
                                         Search
@@ -204,6 +219,49 @@ export default function Index({ auth, issues, departments }) {
                                         </option>
                                     </select>
                                 </div>
+                                <div>
+                                    <label className="mb-1 block text-sm font-medium text-gray-700">
+                                        Assignee
+                                    </label>
+                                    <select
+                                        value={filters.assignee}
+                                        onChange={(e) =>
+                                            setFilters({
+                                                ...filters,
+                                                assignee: e.target.value,
+                                            })
+                                        }
+                                        className="w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    >
+                                        <option value="">All Users</option>
+                                        {users.map((user) => (
+                                            <option
+                                                key={user.id}
+                                                value={user.id}
+                                            >
+                                                {user.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="mb-1 block text-sm font-medium text-gray-700">
+                                        Date
+                                    </label>
+                                    <input
+                                        type="date"
+                                        value={filters.date}
+                                        onChange={(e) =>
+                                            setFilters({
+                                                ...filters,
+                                                date: e.target.value,
+                                            })
+                                        }
+                                        className="w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    />
+                                </div>
+
 
                                 <div className="flex items-end">
                                     <button
