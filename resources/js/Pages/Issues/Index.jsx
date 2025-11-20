@@ -38,7 +38,8 @@ export default function Index({ auth, issues, departments, users }) {
                     .toLowerCase()
                     .includes(filters.search.toLowerCase());
             const matchesAssignee =
-                !filters.assignee || issue.assigned_to === parseInt(filters.assignee);
+                !filters.assignee ||
+                issue.assigned_to === parseInt(filters.assignee);
             const matchesDate =
                 !filters.date || issue.created_at.startsWith(filters.date);
 
@@ -73,6 +74,16 @@ export default function Index({ auth, issues, departments, users }) {
         return colors[status] || "bg-gray-100 text-gray-800";
     };
 
+    const getRowColor = (issue) => {
+        if (issue.assigned_to === auth.user.id) {
+            return "bg-green-100";
+        }
+        if (issue.assignee === null) {
+            return "bg-yellow-100";
+        }
+        return "";
+    };
+
     const canDelete = (issue) => {
         const isAdmin = auth.user?.roles?.some((role) => role.name === "admin");
         const isCreator = issue.created_by === auth.user.id;
@@ -103,14 +114,14 @@ export default function Index({ auth, issues, departments, users }) {
                                     Issues / Tickets
                                 </h2>
                                 <div className="flex gap-4">
-                                    {canViewAllIssues &&
+                                    {canViewAllIssues && (
                                         <Link
                                             href={route("issues.archived")}
                                             className="rounded bg-gray-500 px-4 py-2 font-bold text-white hover:bg-gray-700"
                                         >
                                             Archived Issues
                                         </Link>
-                                    }
+                                    )}
                                     <Link
                                         href={route("issues.create")}
                                         className="rounded bg-blue-500 px-4 py-2 font-bold text-white hover:bg-blue-700"
@@ -262,7 +273,6 @@ export default function Index({ auth, issues, departments, users }) {
                                     />
                                 </div>
 
-
                                 <div className="flex items-end">
                                     <button
                                         onClick={resetFilters}
@@ -307,7 +317,12 @@ export default function Index({ auth, issues, departments, users }) {
                                         {filteredIssues &&
                                         filteredIssues.length > 0 ? (
                                             filteredIssues.map((issue) => (
-                                                <tr key={issue.id}>
+                                                <tr
+                                                    key={issue.id}
+                                                    className={getRowColor(
+                                                        issue
+                                                    )}
+                                                >
                                                     <td className="px-6 py-4">
                                                         <div className="text-sm font-medium text-gray-900">
                                                             {issue.title}
