@@ -1,6 +1,6 @@
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Head, Link, useForm } from "@inertiajs/react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 const ConfirmationDialog = ({ show, onConfirm, onCancel, title, message }) => {
     if (!show) return null;
@@ -48,6 +48,13 @@ export default function Edit({
     });
 
     const [showConfirmation, setShowConfirmation] = useState(false);
+
+    const filteredUsers = useMemo(() => {
+        if (!data.department_id) return [];
+        return users.filter(
+            (user) => user.department_id === parseInt(data.department_id)
+        );
+    }, [data.department_id, users]);
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -285,7 +292,7 @@ export default function Edit({
                                         className="focus:shadow-outline w-full appearance-none rounded border px-3 py-2 leading-tight text-gray-700 shadow focus:outline-none"
                                     >
                                         <option value="">Unassigned</option>
-                                        {users.map((user) => (
+                                        {filteredUsers.map((user) => (
                                             <option
                                                 key={user.id}
                                                 value={user.id}

@@ -18,10 +18,7 @@ export default function Create({ auth, departments, users }) {
         if (!data.department_id) return [];
         return users.filter(
             (user) =>
-                user.department_id === parseInt(data.department_id) ||
-                user.roles?.some((role) =>
-                    ["admin", "director"].includes(role.name)
-                )
+                user.department_id === parseInt(data.department_id)
         );
     }, [data.department_id, users]);
 
