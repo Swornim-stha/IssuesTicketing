@@ -10,15 +10,14 @@ export default function Create({ auth, departments, users }) {
         department_id: "",
         assigned_to: "",
         attachment: null,
-        escalate_to_director: false,
+        // escalate_to_director: false,
     });
 
     // ✅ Department-based user filtering
     const filteredUsers = useMemo(() => {
         if (!data.department_id) return [];
         return users.filter(
-            (user) =>
-                user.department_id === parseInt(data.department_id)
+            (user) => user.department_id === parseInt(data.department_id)
         );
     }, [data.department_id, users]);
 
@@ -216,7 +215,7 @@ export default function Create({ auth, departments, users }) {
                                     )}
                                 </div>
 
-                                {/* Escalate to Director */}
+                                {/* Escalate to Director
                                 <div className="mb-4">
                                     <label className="flex items-center">
                                         <input
@@ -241,7 +240,7 @@ export default function Create({ auth, departments, users }) {
                                         Check this box to escalate this issue
                                         directly to the director
                                     </p>
-                                </div>
+                                </div> */}
 
                                 {/* Attachment */}
                                 <div className="mb-6">
