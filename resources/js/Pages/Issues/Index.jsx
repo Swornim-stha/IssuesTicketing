@@ -2,13 +2,13 @@ import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Head, Link, router } from "@inertiajs/react";
 import { useState, useMemo } from "react";
 
-export default function Index({ auth, issues, departments, users }) {
+export default function Index({ auth, issues, departments /*users */ }) {
     const [filters, setFilters] = useState({
         department: "",
         status: "",
         priority: "",
         search: "",
-        assignee: "",
+        // assignee: "",
         date: "",
     });
 
@@ -37,9 +37,9 @@ export default function Index({ auth, issues, departments, users }) {
                 issue.description
                     .toLowerCase()
                     .includes(filters.search.toLowerCase());
-            const matchesAssignee =
-                !filters.assignee ||
-                issue.assigned_to === parseInt(filters.assignee);
+            // const matchesAssignee =
+            //     !filters.assignee ||
+            //     issue.assigned_to === parseInt(filters.assignee);
             const matchesDate =
                 !filters.date || issue.created_at.startsWith(filters.date);
 
@@ -48,7 +48,7 @@ export default function Index({ auth, issues, departments, users }) {
                 matchesStatus &&
                 matchesPriority &&
                 matchesSearch &&
-                matchesAssignee &&
+                // matchesAssignee &&
                 matchesDate
             );
         });
@@ -73,15 +73,15 @@ export default function Index({ auth, issues, departments, users }) {
         };
         return colors[status] || "bg-gray-100 text-gray-800";
     };
-    const getRowColor = (issue) => {
-        if (issue.assigned_to === auth.user.id) {
-            return "bg-green-100";
-        }
-        if (issue.assignee === null) {
-            return "bg-yellow-100";
-        }
-        return "";
-    };
+    // const getRowColor = (issue) => {
+    //     if (issue.assigned_to === auth.user.id) {
+    //         return "bg-green-100";
+    //     }
+    //     if (issue.assignee === null) {
+    //         return "bg-yellow-100";
+    //     }
+    //     return "";
+    // };
 
     const canDelete = (issue) => {
         const isAdmin = auth.user?.roles?.some((role) => role.name === "admin");
@@ -95,7 +95,7 @@ export default function Index({ auth, issues, departments, users }) {
             status: "",
             priority: "",
             search: "",
-            assignee: "",
+            // assignee: "",
             date: "",
         });
     };
@@ -229,7 +229,7 @@ export default function Index({ auth, issues, departments, users }) {
                                         </option>
                                     </select>
                                 </div>
-                                <div>
+                                {/* <div>
                                     <label className="mb-1 block text-sm font-medium text-gray-700">
                                         Assignee
                                     </label>
@@ -253,7 +253,7 @@ export default function Index({ auth, issues, departments, users }) {
                                             </option>
                                         ))}
                                     </select>
-                                </div>
+                                </div> */}
 
                                 <div>
                                     <label className="mb-1 block text-sm font-medium text-gray-700">
@@ -304,8 +304,11 @@ export default function Index({ auth, issues, departments, users }) {
                                             <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                                                 Status
                                             </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                                            {/* <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                                                 Assigned To
+                                            </th> */}
+                                            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                                                Created At
                                             </th>
                                             <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                                                 Actions
@@ -317,10 +320,10 @@ export default function Index({ auth, issues, departments, users }) {
                                         filteredIssues.length > 0 ? (
                                             filteredIssues.map((issue) => (
                                                 <tr
-                                                    key={issue.id}
-                                                    className={getRowColor(
-                                                        issue
-                                                    )}
+                                                // key={issue.id}
+                                                // className={getRowColor(
+                                                //     issue
+                                                // )}
                                                 >
                                                     <td className="px-6 py-4">
                                                         <div className="text-sm font-medium text-gray-900">
@@ -363,9 +366,25 @@ export default function Index({ auth, issues, departments, users }) {
                                                             )}
                                                         </span>
                                                     </td>
-                                                    <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+                                                    {/* <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
                                                         {issue.assignee?.name ||
                                                             "Unassigned"}
+                                                    </td> */}
+
+                                                    <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+                                                        {new Date(
+                                                            issue.created_at
+                                                        ).toLocaleString(
+                                                            "en-GB",
+                                                            {
+                                                                day: "2-digit",
+                                                                month: "2-digit",
+                                                                year: "numeric",
+                                                                hour: "2-digit",
+                                                                minute: "2-digit",
+                                                                hour12: true,
+                                                            }
+                                                        )}
                                                     </td>
                                                     <td className="whitespace-nowrap px-6 py-4 text-sm font-medium">
                                                         <Link
