@@ -179,7 +179,7 @@ export default function Create({ auth, departments, users }) {
                                 </div>
 
                                 {/* Assign To */}
-                                <div className="mb-4">
+                                {/* <div className="mb-4">
                                     <label
                                         className="mb-2 block text-sm font-bold text-gray-700"
                                         htmlFor="assigned_to"
@@ -213,7 +213,7 @@ export default function Create({ auth, departments, users }) {
                                             {errors.assigned_to}
                                         </p>
                                     )}
-                                </div>
+                                </div> */}
                                 {/* Attachment */}
                                 {/* <div className="mb-6">
                                     <label
