@@ -189,7 +189,7 @@ export default function Show({ auth, issue, canComment }) {
                                     </div>
                                 </div>
 
-                                {issue.attachment && (
+                                {/* {issue.attachment && (
                                     <div>
                                         <h3 className="text-sm font-medium text-gray-500">
                                             Attachment
@@ -203,8 +203,59 @@ export default function Show({ auth, issue, canComment }) {
                                             View Attachment
                                         </a>
                                     </div>
-                                )}
-
+                                )} */}
+                                {issue.attachments &&
+                                    issue.attachments.length > 0 && (
+                                        <div>
+                                            <h3 className="text-sm font-medium text-gray-500 mb-3">
+                                                Attachments
+                                            </h3>
+                                            <div className="space-y-2">
+                                                {issue.attachments.map(
+                                                    (attachment) => (
+                                                        <div
+                                                            key={attachment.id}
+                                                            className="flex items-center justify-between rounded-lg bg-gray-50 p-3"
+                                                        >
+                                                            <div>
+                                                                <p className="text-sm font-medium text-gray-900">
+                                                                    {
+                                                                        attachment.original_name
+                                                                    }
+                                                                </p>
+                                                                <p className="text-xs text-gray-500">
+                                                                    {(
+                                                                        attachment.file_size /
+                                                                        1024
+                                                                    ).toFixed(
+                                                                        2
+                                                                    )}{" "}
+                                                                    KB
+                                                                </p>
+                                                            </div>
+                                                            <div className="flex gap-2">
+                                                                <a
+                                                                    href={`/storage/${attachment.file_path}`}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="rounded bg-blue-500 px-3 py-1 text-sm text-white hover:bg-blue-600"
+                                                                >
+                                                                    View
+                                                                </a>
+                                                                <a
+                                                                    href={`/storage/${attachment.file_path}?download`}
+                                                                    download
+                                                                    className="rounded bg-gray-500 px-3 py-1 text-sm text-white hover:bg-gray-600"
+                                                                >
+                                                                    Download
+                                                                </a>
+                                                            </div>
+                                                        </div>
+                                                    )
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
                                 {/* Comments Section */}
                                 <div className="border-t pt-6">
                                     <h3 className="mb-4 text-lg font-semibold text-gray-900">

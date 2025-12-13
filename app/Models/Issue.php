@@ -21,7 +21,7 @@ class Issue extends Model
         'resolved_at',
         'closed_at',
         'archived_at',
-        'notify_directors',
+        // 'notify_directors',
     ];
 
     protected $casts = [
@@ -48,5 +48,9 @@ class Issue extends Model
     public function comments()
     {
         return $this->hasMany(Comment::class);
+    }
+    public function attachments()
+    {
+        return $this->hasMany(Attachment::class);
     }
 }

@@ -9,7 +9,7 @@ export default function Create({ auth, departments, users }) {
         priority: "medium",
         department_id: "",
         assigned_to: "",
-        attachment: null,
+        attachments: [],
         // escalate_to_director: false,
     });
 
@@ -214,60 +214,209 @@ export default function Create({ auth, departments, users }) {
                                         </p>
                                     )}
                                 </div>
-
-                                {/* Escalate to Director
-                                <div className="mb-4">
-                                    <label className="flex items-center">
-                                        <input
-                                            type="checkbox"
-                                            checked={data.escalate_to_director}
-                                            onChange={(e) => {
-                                                setData(
-                                                    "escalate_to_director",
-                                                    e.target.checked
-                                                );
-                                                if (e.target.checked) {
-                                                    setData("assigned_to", "");
-                                                }
-                                            }}
-                                            className="mr-2"
-                                        />
-                                        <span className="text-sm font-bold text-gray-700">
-                                            Escalate to Director
-                                        </span>
-                                    </label>
-                                    <p className="mt-1 text-xs text-gray-500">
-                                        Check this box to escalate this issue
-                                        directly to the director
-                                    </p>
-                                </div> */}
-
                                 {/* Attachment */}
+                                {/* <div className="mb-6">
+                                    <label
+                                        className="mb-2 block text-sm font-bold text-gray-700"
+                                        htmlFor="attachments"
+                                    >
+                                        Attachments (Optional - Max 10MB each)
+                                    </label>
+                                    <input
+                                        id="attachments"
+                                        type="file"
+                                        multiple={true}
+                                        onChange={(e) =>
+                                            setData("attachments", [
+                                                ...data.attachments,
+                                                ...Array.from(e.target.files),
+                                            ])
+                                        }
+                                        // className="..."
+                                    />
+                                    {data.attachments.length > 0 && (
+                                        <div className="mt-3">
+                                            <p className="mb-2 text-sm font-medium text-gray-700">
+                                                Selected Files (
+                                                {data.attachments.length}):
+                                            </p>
+                                            <div className="space-y-2">
+                                                {data.attachments.map(
+                                                    (file, index) => (
+                                                        <div
+                                                            key={index}
+                                                            className="flex items-center justify-between rounded bg-gray-50 p-2"
+                                                        >
+                                                            <span className="text-sm text-gray-700">
+                                                                {file.name}
+                                                            </span>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    setData(
+                                                                        "attachments",
+                                                                        data.attachments.filter(
+                                                                            (
+                                                                                _,
+                                                                                i
+                                                                            ) =>
+                                                                                i !==
+                                                                                index
+                                                                        )
+                                                                    )
+                                                                }
+                                                                className="text-sm text-red-600 hover:text-red-800"
+                                                            >
+                                                                Remove
+                                                            </button>
+                                                        </div>
+                                                    )
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {errors.attachments && (
+                                        <p className="mt-1 text-xs italic text-red-500">
+                                            {errors.attachments}
+                                        </p>
+                                    )}
+                                </div> */}
+                                {/* Attachments */}
                                 <div className="mb-6">
                                     <label
                                         className="mb-2 block text-sm font-bold text-gray-700"
-                                        htmlFor="attachment"
+                                        htmlFor="attachments"
                                     >
-                                        Attachment (Optional - Max 10MB)
+                                        Attachments (Optional - Max 10MB each)
                                     </label>
+
+                                    {/* Hidden file input */}
                                     <input
-                                        id="attachment"
+                                        id="attachments"
                                         type="file"
+                                        multiple={true}
                                         onChange={(e) =>
-                                            setData(
-                                                "attachment",
-                                                e.target.files[0]
-                                            )
+                                            setData("attachments", [
+                                                ...data.attachments,
+                                                ...Array.from(e.target.files),
+                                            ])
                                         }
-                                        className="focus:shadow-outline w-full appearance-none rounded border px-3 py-2 leading-tight text-gray-700 shadow focus:outline-none"
+                                        className="hidden"
                                     />
-                                    {errors.attachment && (
-                                        <p className="mt-1 text-xs italic text-red-500">
-                                            {errors.attachment}
+
+                                    {/* Custom upload area */}
+                                    <label
+                                        htmlFor="attachments"
+                                        className="flex cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-blue-300 bg-blue-50 p-8 transition hover:border-blue-500 hover:bg-blue-100"
+                                    >
+                                        <div className="text-center">
+                                            <svg
+                                                className="mx-auto h-12 w-12 text-blue-500"
+                                                stroke="currentColor"
+                                                fill="none"
+                                                viewBox="0 0 48 48"
+                                            >
+                                                <path
+                                                    d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-8l-3.172-3.172a4 4 0 00-5.656 0L28 20m0 0l-3.172-3.172a4 4 0 00-5.656 0l-10.172 10.172"
+                                                    strokeWidth="2"
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                />
+                                            </svg>
+                                            <p className="mt-2 text-sm font-medium text-gray-700">
+                                                Click to upload or drag and drop
+                                            </p>
+                                            <p className="text-xs text-gray-500">
+                                                PNG, JPG, PDF up to 10MB each
+                                            </p>
+                                        </div>
+                                    </label>
+
+                                    {/* Selected files list */}
+                                    {data.attachments.length > 0 && (
+                                        <div className="mt-4">
+                                            <p className="mb-3 text-sm font-semibold text-gray-700">
+                                                📎 Selected Files (
+                                                {data.attachments.length}):
+                                            </p>
+                                            <div className="space-y-2">
+                                                {data.attachments.map(
+                                                    (file, index) => (
+                                                        <div
+                                                            key={index}
+                                                            className="flex items-center justify-between rounded-lg bg-gradient-to-r from-gray-200 to-gray-500 p-3 border border-gray-500"
+                                                        >
+                                                            <div className="flex items-center space-x-3">
+                                                                <div className="flex h-8 w-8 items-center justify-center rounded bg-gray-200">
+                                                                    <span className="text-xs font-bold text-gray-700">
+                                                                        {file.name
+                                                                            .split(
+                                                                                "."
+                                                                            )
+                                                                            .pop()
+                                                                            .toUpperCase()}
+                                                                    </span>
+                                                                </div>
+                                                                <div>
+                                                                    <p className="text-sm font-medium text-gray-800">
+                                                                        {
+                                                                            file.name
+                                                                        }
+                                                                    </p>
+                                                                    <p className="text-xs text-gray-500">
+                                                                        {(
+                                                                            file.size /
+                                                                            1024
+                                                                        ).toFixed(
+                                                                            2
+                                                                        )}{" "}
+                                                                        KB
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    setData(
+                                                                        "attachments",
+                                                                        data.attachments.filter(
+                                                                            (
+                                                                                _,
+                                                                                i
+                                                                            ) =>
+                                                                                i !==
+                                                                                index
+                                                                        )
+                                                                    )
+                                                                }
+                                                                className="rounded-full bg-red-100 p-1 text-red-600 hover:bg-red-200 transition"
+                                                            >
+                                                                <svg
+                                                                    className="h-5 w-5"
+                                                                    fill="currentColor"
+                                                                    viewBox="0 0 20 20"
+                                                                >
+                                                                    <path
+                                                                        fillRule="evenodd"
+                                                                        d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                                                                        clipRule="evenodd"
+                                                                    />
+                                                                </svg>
+                                                            </button>
+                                                        </div>
+                                                    )
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {errors.attachments && (
+                                        <p className="mt-2 text-xs italic text-red-500">
+                                            {errors.attachments}
                                         </p>
                                     )}
                                 </div>
-
                                 {/* Submit */}
                                 <div className="flex items-center justify-between">
                                     <button

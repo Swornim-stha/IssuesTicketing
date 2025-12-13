@@ -83,16 +83,6 @@ export default function Index({ auth, issues, departments, users }) {
         return "";
     };
 
-    const getRowColor = (issue) => {
-        if (issue.assigned_to === auth.user.id) {
-            return "bg-green-100";
-        }
-        if (issue.assignee === null) {
-            return "bg-yellow-100";
-        }
-        return "";
-    };
-
     const canDelete = (issue) => {
         const isAdmin = auth.user?.roles?.some((role) => role.name === "admin");
         const isCreator = issue.created_by === auth.user.id;

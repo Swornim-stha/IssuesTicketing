@@ -41,7 +41,6 @@ class IssueController extends Controller
         }
         $assigneeIds = $issues->pluck('assigned_to')->filter()->unique();
         $users = User::whereIn('id', $assigneeIds)->get();
-
         return Inertia::render('Issues/Index', [
             'issues' => $issues,
             'departments' => $departments,
@@ -62,6 +61,33 @@ class IssueController extends Controller
         ]);
     }
 
+    // public function store(Request $request)
+    // {
+    //     abort_unless(auth()->user()->can('create issues'), 403);
+
+    //     // $validated = $request->validate([
+    //     //     'title' => 'required|string|max:255',
+    //     //     'description' => 'required|string',
+    //     //     'priority' => 'required|in:low,medium,high,critical',
+    //     //     'department_id' => 'required|exists:departments,id',
+    //     //     'assigned_to' => 'nullable|exists:users,id',
+    //     //     'attachment' => 'nullable|file|max:10240',
+    //     // ]);
+
+    //     // $validated['created_by'] = auth()->id();
+    //     // $validated['status'] = 'open';
+
+    //     // if ($request->hasFile('attachment')) {
+    //     //     $file = $request->file('attachment');
+    //     //     $filename = time() . '_' . $file->getClientOriginalName();
+    //     //     $validated['attachment'] = $file->storeAs('attachments', $filename, 'public');
+    //     // }
+
+    //     // $issue = Issue::create($validated);
+
+    //     event(new IssueCreated($issue));
+    //     return redirect()->route('issues.index')->with('success', 'Issue created.');
+    // }
     public function store(Request $request)
     {
         abort_unless(auth()->user()->can('create issues'), 403);
@@ -72,23 +98,31 @@ class IssueController extends Controller
             'priority' => 'required|in:low,medium,high,critical',
             'department_id' => 'required|exists:departments,id',
             'assigned_to' => 'nullable|exists:users,id',
-            'attachment' => 'nullable|file|max:10240',
+            'attachments' => 'nullable|array',
+            'attachments.*' => 'nullable|file|max:10240',
         ]);
 
         $validated['created_by'] = auth()->id();
         $validated['status'] = 'open';
 
-        if ($request->hasFile('attachment')) {
-            $file = $request->file('attachment');
-            $filename = time() . '_' . $file->getClientOriginalName();
-            $validated['attachment'] = $file->storeAs('attachments', $filename, 'public');
+        $issue = Issue::create($validated);
+
+        if ($request->hasFile('attachments')) {
+            foreach ($request->file('attachments') as $file) {
+                $filename = time() . '_' . uniqid() . '_' . $file->getClientOriginalName();
+                $filePath = $file->storeAs('attachments', $filename, 'public');
+
+                $issue->attachments()->create([
+                    'file_path' => $filePath,
+                    'original_name' => $file->getClientOriginalName(),
+                    'file_size' => $file->getSize(),
+                ]);
+            }
         }
 
-        $issue = Issue::create($validated);
         event(new IssueCreated($issue));
         return redirect()->route('issues.index')->with('success', 'Issue created.');
     }
-
     public function show(Issue $issue)
     {
         $user = auth()->user();
@@ -105,7 +139,7 @@ class IssueController extends Controller
             }
         }
 
-        $issue->load(['department', 'creator', 'assignee', 'comments.user']);
+        $issue->load(['department', 'creator', 'assignee', 'comments.user', 'attachments']);
 
         return Inertia::render('Issues/Show', [
             'issue' => $issue,
@@ -134,6 +168,45 @@ class IssueController extends Controller
         ]);
     }
 
+    // public function update(Request $request, Issue $issue)
+    // {
+    //     abort_unless(auth()->user()->can('edit issues'), 403);
+
+    //     $validated = $request->validate([
+    //         'title' => 'required|string|max:255',
+    //         'description' => 'required|string',
+    //         'priority' => 'required|in:low,medium,high,critical',
+    //         'status' => 'required|in:open,in_progress,resolved,closed',
+    //         'department_id' => 'required|exists:departments,id',
+    //         'assigned_to' => 'nullable|exists:users,id',
+    //         'attachment' => 'nullable|file|max:10240',
+    //         'notify_directors' => 'nullable|boolean',
+    //     ]);
+
+    //     $originalData = $issue->getOriginal();
+
+    //     if ($request->hasFile('attachment')) {
+    //         if ($issue->attachment) {
+    //             Storage::disk('public')->delete($issue->attachment);
+    //         }
+    //         $file = $request->file('attachment');
+    //         $filename = time() . '_' . $file->getClientOriginalName();
+    //         $validated['attachment'] = $file->storeAs('attachments', $filename, 'public');
+    //     }
+
+    //     if ($validated['status'] === 'resolved' && $issue->status !== 'resolved') {
+    //         $validated['resolved_at'] = now();
+    //     }
+
+    //     if ($validated['status'] === 'closed' && $issue->status !== 'closed') {
+    //         $validated['closed_at'] = now();
+    //         $validated['archived_at'] = now();
+    //     }
+
+    //     $issue->update($validated);
+    //     event(new IssueUpdated($issue, $originalData, auth()->user()));
+    //     return redirect()->route('issues.index')->with('success', 'Issue updated.');
+    // }
     public function update(Request $request, Issue $issue)
     {
         abort_unless(auth()->user()->can('edit issues'), 403);
@@ -145,19 +218,24 @@ class IssueController extends Controller
             'status' => 'required|in:open,in_progress,resolved,closed',
             'department_id' => 'required|exists:departments,id',
             'assigned_to' => 'nullable|exists:users,id',
-            'attachment' => 'nullable|file|max:10240',
-            'notify_directors' => 'nullable|boolean',
+            'attachments' => 'nullable|array',
+            'attachments.*' => 'nullable|file|max:10240',
+            // 'notify_directors' => 'nullable|boolean',
         ]);
 
         $originalData = $issue->getOriginal();
 
-        if ($request->hasFile('attachment')) {
-            if ($issue->attachment) {
-                Storage::disk('public')->delete($issue->attachment);
+        if ($request->hasFile('attachments')) {
+            foreach ($request->file('attachments') as $file) {
+                $filename = time() . '_' . uniqid() . '_' . $file->getClientOriginalName();
+                $filePath = $file->storeAs('attachments', $filename, 'public');
+
+                $issue->attachments()->create([
+                    'file_path' => $filePath,
+                    'original_name' => $file->getClientOriginalName(),
+                    'file_size' => $file->getSize(),
+                ]);
             }
-            $file = $request->file('attachment');
-            $filename = time() . '_' . $file->getClientOriginalName();
-            $validated['attachment'] = $file->storeAs('attachments', $filename, 'public');
         }
 
         if ($validated['status'] === 'resolved' && $issue->status !== 'resolved') {
@@ -173,14 +251,26 @@ class IssueController extends Controller
         event(new IssueUpdated($issue, $originalData, auth()->user()));
         return redirect()->route('issues.index')->with('success', 'Issue updated.');
     }
+    // public function destroy(Issue $issue)
+    // {
+    //     abort_unless(auth()->user()->can('delete issues'), 403);
 
+    //     if ($issue->attachment) {
+    //         Storage::disk('public')->delete($issue->attachment);
+    //     }
+    //     $issue->delete();
+    //     return redirect()->route('issues.index')->with('success', 'Issue deleted.');
+    // }
     public function destroy(Issue $issue)
     {
         abort_unless(auth()->user()->can('delete issues'), 403);
 
-        if ($issue->attachment) {
-            Storage::disk('public')->delete($issue->attachment);
+        // Delete all attachments associated with this issue
+        foreach ($issue->attachments as $attachment) {
+            Storage::disk('public')->delete($attachment->file_path);
+            $attachment->delete();
         }
+
         $issue->delete();
         return redirect()->route('issues.index')->with('success', 'Issue deleted.');
     }
