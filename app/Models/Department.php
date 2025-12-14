@@ -11,6 +11,7 @@ class Department extends Model
 
     protected $fillable = [
         'name',
+        'email',
         'description',
         'is_active',
         'head_id',

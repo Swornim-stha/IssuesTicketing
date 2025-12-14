@@ -1,11 +1,13 @@
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Head, Link, useForm } from "@inertiajs/react";
 
-export default function Create({ auth }) {
+export default function Create({ auth, users }) {
     const { data, setData, post, processing, errors } = useForm({
         name: "",
+        email: "",
         description: "",
         is_active: true,
+        head_id: "",
     });
 
     const handleSubmit = (e) => {
@@ -62,6 +64,28 @@ export default function Create({ auth }) {
                                         </p>
                                     )}
                                 </div>
+                                <div className="mb-4">
+                                    <label
+                                        className="mb-2 block text-sm font-bold text-gray-700"
+                                        htmlFor="name"
+                                    >
+                                        Department Email *
+                                    </label>
+                                    <input
+                                        id="email"
+                                        type="email"
+                                        value={data.email}
+                                        onChange={(e) =>
+                                            setData("email", e.target.value)
+                                        }
+                                        className="focus:shadow-outline w-full appearance-none rounded border px-3 py-2 leading-tight text-gray-700 shadow focus:outline-none"
+                                    />
+                                    {errors.email && (
+                                        <p className="mt-1 text-xs italic text-red-500">
+                                            {errors.email}
+                                        </p>
+                                    )}
+                                </div>
 
                                 <div className="mb-4">
                                     <label
@@ -85,6 +109,35 @@ export default function Create({ auth }) {
                                     {errors.description && (
                                         <p className="mt-1 text-xs italic text-red-500">
                                             {errors.description}
+                                        </p>
+                                    )}
+                                </div>
+
+                                <div className="mb-4">
+                                    <label
+                                        className="mb-2 block text-sm font-bold text-gray-700"
+                                        htmlFor="head_id"
+                                    >
+                                        Department Head
+                                    </label>
+                                    <select
+                                        id="head_id"
+                                        value={data.head_id}
+                                        onChange={(e) =>
+                                            setData("head_id", e.target.value)
+                                        }
+                                        className="focus:shadow-outline w-full appearance-none rounded border px-3 py-2 leading-tight text-gray-700 shadow focus:outline-none"
+                                    >
+                                        <option value="">Select a user</option>
+                                        {users.map((user) => (
+                                            <option key={user.id} value={user.id}>
+                                                {user.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {errors.head_id && (
+                                        <p className="mt-1 text-xs italic text-red-500">
+                                            {errors.head_id}
                                         </p>
                                     )}
                                 </div>

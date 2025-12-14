@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Department;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -10,7 +11,7 @@ class DepartmentController extends Controller
 {
     public function index()
     {
-        $departments = Department::latest()->get();
+        $departments = Department::with('head')->latest()->get();
 
         return Inertia::render('Departments/Index', [
             'departments' => $departments
@@ -19,15 +20,19 @@ class DepartmentController extends Controller
 
     public function create()
     {
-        return Inertia::render('Departments/Create');
+        return Inertia::render('Departments/Create', [
+            'users' => User::all()
+        ]);
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:departments',
+            'email' => 'required|email|unique:departments,email',
             'description' => 'nullable|string',
             'is_active' => 'boolean',
+            'head_id' => 'nullable|integer|exists:users,id',
         ]);
 
         Department::create($validated);
@@ -39,7 +44,8 @@ class DepartmentController extends Controller
     public function edit(Department $department)
     {
         return Inertia::render('Departments/Edit', [
-            'department' => $department
+            'department' => $department,
+            'users' => User::all()
         ]);
     }
 
@@ -47,8 +53,10 @@ class DepartmentController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:departments,name,' . $department->id,
+            'email' => 'required|email|unique:departments,email,' . $department->id,
             'description' => 'nullable|string',
             'is_active' => 'boolean',
+            'head_id' => 'nullable|integer|exists:users,id',
         ]);
 
         $department->update($validated);

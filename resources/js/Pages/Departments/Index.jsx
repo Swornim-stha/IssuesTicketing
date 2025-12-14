@@ -36,6 +36,12 @@ export default function Index({ auth, departments }) {
                                             Name
                                         </th>
                                         <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                                            Email
+                                        </th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                                            Head
+                                        </th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                                             Description
                                         </th>
                                         <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
@@ -51,6 +57,12 @@ export default function Index({ auth, departments }) {
                                         <tr key={department.id}>
                                             <td className="whitespace-nowrap px-6 py-4">
                                                 {department.name}
+                                            </td>
+                                            <td className="whitespace-nowrap px-6 py-4">
+                                                {department.email || 'N/A'}
+                                            </td>
+                                            <td className="whitespace-nowrap px-6 py-4">
+                                                {department.head ? department.head.name : 'N/A'}
                                             </td>
                                             <td className="px-6 py-4">
                                                 <TruncatedText text={department.description || 'N/A'} maxLength={100} />
