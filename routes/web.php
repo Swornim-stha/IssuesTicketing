@@ -6,7 +6,7 @@ use App\Http\Controllers\IssueController;
 use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\RoleManagementController;
 use App\Http\Controllers\DashboardController;
-use App\Models\Comment;
+use App\Http\Controllers\NotificationController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -32,26 +32,31 @@ Route::middleware('auth')->group(function () {
     // Issues
     Route::get('issues/archived', [IssueController::class, 'archived'])->name('issues.archived');
     Route::resource('issues', IssueController::class);
+    Route::post('issues/{issue}/archive', [IssueController::class, 'archive'])->name('issues.archive');
     Route::post('issues/{issue}/comments', [IssueController::class, 'storeComment'])->name('issues.comments.store');
     Route::put('comments/{comment}', [IssueController::class, 'updateComment'])->name('comments.update');
     Route::delete('comments/{comment}', [IssueController::class, 'destroyComment'])->name('comments.destroy');
 
     // Departments
-    Route::resource('departments', DepartmentController::class)->middleware('can:view departments');
+    Route::resource('departments', DepartmentController::class)->middleware('can:departments.view');
 
     // Users
-    Route::middleware('can:view users')->group(function () {
+    Route::middleware('can:users.view')->group(function () {
         Route::get('users', [UserManagementController::class, 'index'])->name('users.index');
-        Route::post('users', [UserManagementController::class, 'store'])->name('users.store')->middleware('can:edit users');
-        Route::get('users/{user}/edit', [UserManagementController::class, 'edit'])->name('users.edit')->middleware('can:edit users');
-        Route::put('users/{user}', [UserManagementController::class, 'update'])->name('users.update')->middleware('can:edit users');
-        Route::delete('users/{user}', [UserManagementController::class, 'destroy'])->name('users.destroy')->middleware('can:delete users');
+        Route::post('users', [UserManagementController::class, 'store'])->name('users.store')->middleware('can:users.edit');
+        Route::get('users/{user}/edit', [UserManagementController::class, 'edit'])->name('users.edit')->middleware('can:users.edit');
+        Route::put('users/{user}', [UserManagementController::class, 'update'])->name('users.update')->middleware('can:users.edit');
+        Route::delete('users/{user}', [UserManagementController::class, 'destroy'])->name('users.destroy')->middleware('can:users.delete');
     });
 
     // Roles
-    Route::middleware('can:view roles')->group(function () {
+    Route::middleware('can:roles.view')->group(function () {
         Route::resource('roles', RoleManagementController::class);
     });
+
+    // Notifications
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/mark-read', [NotificationController::class, 'markAsRead'])->name('notifications.markRead');
 });
 
 require __DIR__ . '/auth.php';

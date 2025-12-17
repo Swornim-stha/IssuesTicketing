@@ -5,67 +5,91 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 class PermissionSeeder extends Seeder
 {
     public function run(): void
     {
-        // Create permissions
-        $permissions = [
-            'view issues',
-            'create issues',
-            'edit issues',
-            'delete issues',
-            'change issue status',
-            'view all issues',
-            'view department issues',
-            'view own issues',
-            'view departments',
-            'create departments',
-            'edit departments',
-            'delete departments',
-            'view users',
-            'edit users',
-            'delete users',
-            'view roles',
-            'create roles',
-            'edit roles',
-            'delete roles',
+        // Reset cached roles and permissions
+        app()[PermissionRegistrar::class]->forgetCachedPermissions();
+
+        // Define permissions in a structured way
+        $permissionsByGroup = [
+            'issues' => [
+                'issues.view_all',
+                'issues.view_department',
+                'issues.view_own',
+                'issues.create',
+                'issues.edit',
+                'issues.delete',
+                'issues.change_status',
+                'issues.view_assignee',
+                'issues.archive',
+            ],
+            'departments' => [
+                'departments.view',
+                'departments.create',
+                'departments.edit',
+                'departments.delete',
+            ],
+            'users' => [
+                'users.view',
+                'users.create',
+                'users.edit',
+                'users.delete',
+            ],
+            'roles' => [
+                'roles.view',
+                'roles.create',
+                'roles.edit',
+                'roles.delete',
+            ],
         ];
 
-        foreach ($permissions as $permission) {
-            Permission::firstOrCreate(['name' => $permission]);
+        // Create permissions
+        foreach ($permissionsByGroup as $group => $permissions) {
+            // Create a parent permission for the group
+            Permission::firstOrCreate(['name' => $group]);
+            foreach ($permissions as $permissionName) {
+                Permission::firstOrCreate(['name' => $permissionName]);
+            }
         }
 
-        // Admin role - all permissions
-        $admin = Role::firstOrCreate(['name' => 'admin']);
-        $admin->syncPermissions(Permission::all());
+        // Create Roles if they don't exist
+        $superAdminRole = Role::firstOrCreate(['name' => 'super-admin']);
+        $adminRole = Role::firstOrCreate(['name' => 'admin']);
+        $directorRole = Role::firstOrCreate(['name' => 'director']);
+        $employeeRole = Role::firstOrCreate(['name' => 'employee']);
+        $userRole = Role::firstOrCreate(['name' => 'user']);
 
-        // Director role
-        $director = Role::firstOrCreate(['name' => 'director']);
-        $director->syncPermissions([
-            'view issues',
-            'create issues',
-            'edit issues',
-            'change issue status',
-            'view department issues',
-            'view users',
-            'edit users',
-            'view roles',
+        // Assign all permissions to Super Admin
+        $superAdminRole->syncPermissions(Permission::all());
+
+        // Assign permissions to Admin
+        $adminRole->syncPermissions(array_merge(
+            $permissionsByGroup['issues'],
+            $permissionsByGroup['departments'],
+            $permissionsByGroup['users'],
+            $permissionsByGroup['roles']
+        ));
+
+        // Assign permissions to Director
+        $directorRole->syncPermissions([
+            'issues', 'issues.view_department', 'issues.create', 'issues.edit', 'issues.change_status', 'issues.view_assignee','issues.archive',
+            'users', 'users.view', 'users.edit',
+            'roles', 'roles.view',
+            'departments', 'departments.view',
         ]);
 
-        // Employee role
-        $employee = Role::firstOrCreate(['name' => 'employee']);
-        $employee->syncPermissions([
-            'view issues',
-            'create issues',
-            'edit issues',
-            'change issue status',
-            'view department issues',
+        // Assign permissions to Employee
+        $employeeRole->syncPermissions([
+            'issues', 'issues.view_department', 'issues.create', 'issues.edit', 'issues.change_status',
         ]);
 
-        // User role
-        $user = Role::firstOrCreate(['name' => 'user']);
-        $user->syncPermissions(['view own issues', 'create issues', 'edit issues', 'delete issues']);
+        // Assign permissions to User (basic user)
+        $userRole->syncPermissions([
+            'issues', 'issues.view_own', 'issues.create',
+        ]);
     }
 }

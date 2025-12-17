@@ -35,6 +35,7 @@ export default function Edit({
     departments,
     users,
     canChangeStatus,
+    canViewAssignee,
 }) {
     const { data, setData, post, processing, errors } = useForm({
         title: issue.title,
@@ -273,6 +274,7 @@ export default function Edit({
                                     )}
                                 </div>
 
+                                {canViewAssignee && (
                                 <div className="mb-4">
                                     <label
                                         className="mb-2 block text-sm font-bold text-gray-700"
@@ -307,6 +309,7 @@ export default function Edit({
                                         </p>
                                     )}
                                 </div>
+                                )}
 
                                 <div className="mb-6">
                                     <label

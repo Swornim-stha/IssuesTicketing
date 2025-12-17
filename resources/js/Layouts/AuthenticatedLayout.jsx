@@ -4,6 +4,7 @@ import NavLink from "@/Components/NavLink";
 import ResponsiveNavLink from "@/Components/ResponsiveNavLink";
 import { Link, usePage } from "@inertiajs/react";
 import { useState } from "react";
+import NotificationBell from "@/Components/NotificationBell"; // Import the notification component
 
 export default function AuthenticatedLayout({ header, children }) {
     const { auth } = usePage().props;
@@ -14,14 +15,15 @@ export default function AuthenticatedLayout({ header, children }) {
 
     // Helper to check permissions
     const hasPermission = (permissionName) => {
-        return user?.roles?.some((role) =>
-            role.permissions?.some((perm) => perm.name === permissionName)
-        );
+        if (!user || !user.permissions) {
+            return false;
+        }
+        return user.permissions.includes(permissionName);
     };
 
-    const canViewDepartments = hasPermission("view departments");
-    const canViewUsers = hasPermission("view users");
-    const canViewRoles = hasPermission("view roles");
+    const canViewDepartments = hasPermission("departments.view");
+    const canViewUsers = hasPermission("users.view");
+    const canViewRoles = hasPermission("roles.view");
 
     return (
         <div className="min-h-screen bg-gray-100">
@@ -82,6 +84,7 @@ export default function AuthenticatedLayout({ header, children }) {
                         </div>
 
                         <div className="hidden sm:ms-6 sm:flex sm:items-center">
+                            <NotificationBell />
                             <div className="relative ms-3">
                                 <Dropdown>
                                     <Dropdown.Trigger>

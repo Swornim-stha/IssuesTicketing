@@ -1,62 +1,58 @@
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Head, Link, useForm } from "@inertiajs/react";
+import { useState } from "react";
+import { Tree, Input, Button, message } from "antd";
 
-export default function Edit({ auth, role, permissions, rolePermissions }) {
+export default function EditRole({ role, permissionsTree, rolePermissions }) {
     const { data, setData, put, processing, errors } = useForm({
         name: role.name,
         permissions: rolePermissions,
     });
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        put(route("roles.update", role.id));
+    const [checkedKeys, setCheckedKeys] = useState(rolePermissions);
+
+    const onCheck = (keys) => {
+        setCheckedKeys(keys);
+        setData('permissions', keys);
     };
 
-    const togglePermission = (permissionName) => {
-        if (data.permissions.includes(permissionName)) {
-            setData(
-                "permissions",
-                data.permissions.filter((p) => p !== permissionName)
-            );
-        } else {
-            setData("permissions", [...data.permissions, permissionName]);
-        }
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        put(route("roles.update", role.id), {
+            onSuccess: () => {
+                message.success("Role updated successfully!");
+            },
+            onError: () => {
+                message.error("Failed to update role.");
+            }
+        });
     };
 
     return (
         <AuthenticatedLayout
             header={
                 <h2 className="text-xl font-semibold leading-tight text-gray-800">
-                    Edit Role
+                    Edit Role: {role.name}
                 </h2>
             }
         >
-            <Head title="Edit Role" />
+            <Head title={`Edit Role - ${role.name}`} />
 
             <div className="py-12">
-                <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-4xl sm:px-6 lg:px-8">
                     <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
                         <div className="p-6">
                             <div className="mb-6 flex items-center justify-between">
                                 <h2 className="text-2xl font-semibold">
-                                    Edit Role: {role.name}
+                                    Edit Role
                                 </h2>
                                 <Link
                                     href={route("roles.index")}
                                     className="rounded bg-gray-500 px-4 py-2 font-bold text-white hover:bg-gray-700"
                                 >
-                                    Back to List
+                                    Back to Roles
                                 </Link>
                             </div>
-
-                            {["admin", "director"].includes(role.name) && (
-                                <div className="mb-4 rounded-lg bg-yellow-50 p-4">
-                                    <p className="text-sm text-yellow-800">
-                                        Note: This is a core system role. Be
-                                        careful when modifying permissions.
-                                    </p>
-                                </div>
-                            )}
 
                             <form onSubmit={handleSubmit}>
                                 <div className="mb-6">
@@ -64,16 +60,14 @@ export default function Edit({ auth, role, permissions, rolePermissions }) {
                                         className="mb-2 block text-sm font-bold text-gray-700"
                                         htmlFor="name"
                                     >
-                                        Role Name *
+                                        Role Name
                                     </label>
-                                    <input
+                                    <Input
                                         id="name"
-                                        type="text"
                                         value={data.name}
-                                        onChange={(e) =>
-                                            setData("name", e.target.value)
-                                        }
-                                        className="focus:shadow-outline w-full appearance-none rounded border px-3 py-2 leading-tight text-gray-700 shadow focus:outline-none"
+                                        onChange={(e) => setData("name", e.target.value)}
+                                        placeholder="Enter role name"
+                                        className="max-w-md"
                                     />
                                     {errors.name && (
                                         <p className="mt-1 text-xs italic text-red-500">
@@ -83,32 +77,18 @@ export default function Edit({ auth, role, permissions, rolePermissions }) {
                                 </div>
 
                                 <div className="mb-6">
-                                    <label className="mb-3 block text-sm font-bold text-gray-700">
+                                    <label className="mb-2 block text-sm font-bold text-gray-700">
                                         Permissions
                                     </label>
-                                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
-                                        {permissions.map((permission) => (
-                                            <label
-                                                key={permission.id}
-                                                className="flex items-center rounded border p-3 hover:bg-gray-50"
-                                            >
-                                                <input
-                                                    type="checkbox"
-                                                    checked={data.permissions.includes(
-                                                        permission.name
-                                                    )}
-                                                    onChange={() =>
-                                                        togglePermission(
-                                                            permission.name
-                                                        )
-                                                    }
-                                                    className="mr-2"
-                                                />
-                                                <span className="text-sm text-gray-700">
-                                                    {permission.name}
-                                                </span>
-                                            </label>
-                                        ))}
+                                    <div className="rounded-md border p-4">
+                                        <Tree
+                                            checkable
+                                            onCheck={onCheck}
+                                            checkedKeys={checkedKeys}
+                                            treeData={permissionsTree}
+                                            defaultExpandAll={true}
+                                            className="w-full"
+                                        />
                                     </div>
                                     {errors.permissions && (
                                         <p className="mt-1 text-xs italic text-red-500">
@@ -117,16 +97,15 @@ export default function Edit({ auth, role, permissions, rolePermissions }) {
                                     )}
                                 </div>
 
-                                <div className="flex items-center justify-between">
-                                    <button
-                                        type="submit"
-                                        disabled={processing}
-                                        className="focus:shadow-outline rounded bg-blue-500 px-4 py-2 font-bold text-white hover:bg-blue-700 focus:outline-none disabled:opacity-50"
+                                <div className="flex items-center">
+                                    <Button
+                                        type="primary"
+                                        htmlType="submit"
+                                        loading={processing}
+                                        className="bg-blue-500"
                                     >
-                                        {processing
-                                            ? "Updating..."
-                                            : "Update Role"}
-                                    </button>
+                                        {processing ? "Saving..." : "Save Role"}
+                                    </Button>
                                 </div>
                             </form>
                         </div>

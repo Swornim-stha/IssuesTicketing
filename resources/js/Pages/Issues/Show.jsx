@@ -1,8 +1,9 @@
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
-import { Head, Link, useForm } from "@inertiajs/react";
+import { Head, Link, useForm, router } from "@inertiajs/react";
 import { useState } from "react";
+import DangerButton from "@/Components/DangerButton";
 
-export default function Show({ auth, issue, canComment }) {
+export default function Show({ auth, issue, canComment, canViewAssignee, can_archive_issue }) {
     const [editingComment, setEditingComment] = useState(null);
 
     const { data, setData, post, processing, reset } = useForm({
@@ -62,6 +63,16 @@ export default function Show({ auth, issue, canComment }) {
             router.delete(route("comments.destroy", commentId));
         }
     };
+    const handleArchive = () => {
+        if (confirm("Are you sure you want to archive this issue?")) {
+            router.post(route("issues.archive", issue.id), null, {
+                onSuccess: () => {
+                    // Optionally, you can redirect or show a notification
+                },
+            });
+        }
+    };
+
 
     return (
         <AuthenticatedLayout>
@@ -76,6 +87,14 @@ export default function Show({ auth, issue, canComment }) {
                                     Issue Details
                                 </h2>
                                 <div className="space-x-2">
+                                    {can_archive_issue && !issue.archived_at && (
+                                        <DangerButton
+                                            onClick={handleArchive}
+                                            className="ml-2"
+                                        >
+                                            Archive
+                                        </DangerButton>
+                                    )}
                                     <Link
                                         href={route("issues.edit", issue.id)}
                                         className="rounded bg-indigo-500 px-4 py-2 font-bold text-white hover:bg-indigo-700"
@@ -168,15 +187,17 @@ export default function Show({ auth, issue, canComment }) {
                                             ).toLocaleString()}
                                         </p>
                                     </div>
-                                    <div>
-                                        <h3 className="text-sm font-medium text-gray-500">
-                                            Assigned To
-                                        </h3>
-                                        <p className="mt-1 text-gray-900">
-                                            {issue.assignee?.name ||
-                                                "Unassigned"}
-                                        </p>
-                                    </div>
+                                    {canViewAssignee && (
+                                        <div>
+                                            <h3 className="text-sm font-medium text-gray-500">
+                                                Assigned To
+                                            </h3>
+                                            <p className="mt-1 text-gray-900">
+                                                {issue.assignee?.name ||
+                                                    "Unassigned"}
+                                            </p>
+                                        </div>
+                                    )}
                                     <div>
                                         <h3 className="text-sm font-medium text-gray-500">
                                             Last Updated:

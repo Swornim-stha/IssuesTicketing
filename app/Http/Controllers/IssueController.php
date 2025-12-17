@@ -15,42 +15,68 @@ use App\Events\IssueUpdated;
 
 class IssueController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $user = auth()->user();
 
-        if ($user->can('view all issues')) {
-            $issues = Issue::with(['department', 'creator', 'assignee'])->whereNull('archived_at')->latest()->get();
-            $departments = Department::where('is_active', true)->get();
-        } elseif ($user->can('view department issues')) {
-            $issues = Issue::with(['department', 'creator', 'assignee'])
-                ->whereNull('archived_at')
-                ->where(function ($query) use ($user) {
-                    $query->where('department_id', $user->department_id)
-                        ->orWhere('assigned_to', $user->id)
-                        ->orWhere('created_by', $user->id);
-                })
-                ->latest()->get();
-            $departments = Department::where('is_active', true)->get();
-        } else {
-            $issues = Issue::with(['department', 'creator', 'assignee'])
-                ->whereNull('archived_at')
-                ->where('created_by', $user->id)
-                ->latest()->get();
-            $departments = [];
+        $issuesQuery = Issue::with(['department', 'creator', 'assignee'])
+            ->whereNull('archived_at')
+            ->latest();
+
+        // Apply filters
+        if ($request->has('department') && $request->department != '') {
+            $issuesQuery->where('department_id', $request->department);
         }
-        $assigneeIds = $issues->pluck('assigned_to')->filter()->unique();
-        $users = User::whereIn('id', $assigneeIds)->get();
+        if ($request->has('status') && $request->status != '') {
+            $issuesQuery->where('status', $request->status);
+        }
+        if ($request->has('priority') && $request->priority != '') {
+            $issuesQuery->where('priority', $request->priority);
+        }
+        if ($request->has('search') && $request->search != '') {
+            $issuesQuery->where(function ($query) use ($request) {
+                $query->where('title', 'like', '%' . $request->search . '%')
+                    ->orWhere('description', 'like', '%' . $request->search . '%');
+            });
+        }
+        if ($request->has('assignee') && $request->assignee != '') {
+            $issuesQuery->where('assigned_to', $request->assignee);
+        }
+        if ($request->has('date') && $request->date != '') {
+            $issuesQuery->whereDate('created_at', $request->date);
+        }
+
+
+        if ($user->can('issues.view_all')) {
+            // No additional WHERE clause needed
+        } elseif ($user->can('issues.view_department')) {
+            $issuesQuery->where(function ($query) use ($user) {
+                $query->where('department_id', $user->department_id)
+                    ->orWhere('assigned_to', $user->id)
+                    ->orWhere('created_by', $user->id);
+            });
+        } else { // view own issues
+            $issuesQuery->where('created_by', $user->id);
+        }
+
+        $issues = $issuesQuery->paginate(10)->withQueryString(); // Paginate the results
+
+        $departments = Department::where('is_active', true)->get();
+        // Fetch all users to populate the assignee filter dropdown, if needed
+        $users = User::all();
+        $can_archive_issue = $user->can('issues.archive');
         return Inertia::render('Issues/Index', [
             'issues' => $issues,
             'departments' => $departments,
-            'users' => $users
+            'users' => $users,
+            'filters' => $request->all(['search', 'department', 'status', 'priority', 'assignee', 'date']), // Pass current filters back to the frontend
+            'can_archive_issue' => $can_archive_issue,
         ]);
     }
 
     public function create()
     {
-        abort_unless(auth()->user()->can('create issues'), 403);
+        abort_unless(auth()->user()->can('issues.create'), 403);
 
         $departments = Department::where('is_active', true)->get();
         $users = User::with('roles')->get();
@@ -63,7 +89,7 @@ class IssueController extends Controller
 
     // public function store(Request $request)
     // {
-    //     abort_unless(auth()->user()->can('create issues'), 403);
+    //     abort_unless(auth()->user()->can('issues.create'), 403);
 
     //     // $validated = $request->validate([
     //     //     'title' => 'required|string|max:255',
@@ -90,7 +116,7 @@ class IssueController extends Controller
     // }
     public function store(Request $request)
     {
-        abort_unless(auth()->user()->can('create issues'), 403);
+        abort_unless(auth()->user()->can('issues.create'), 403);
 
         $validated = $request->validate([
             'title' => 'required|string|max:255',
@@ -127,23 +153,27 @@ class IssueController extends Controller
     {
         $user = auth()->user();
 
-        if (!$user->can('view all issues')) {
+        if (!$user->can('issues.view_all')) {
             if (
-                $user->can('view department issues') && $issue->department_id !== $user->department_id
+                $user->can('issues.view_department') && $issue->department_id !== $user->department_id
                 && $issue->assigned_to !== $user->id && $issue->created_by !== $user->id
             ) {
                 abort(403);
             }
-            if ($user->can('view own issues') && $issue->created_by !== $user->id) {
+            if ($user->can('issues.view_own') && $issue->created_by !== $user->id) {
                 abort(403);
             }
         }
 
         $issue->load(['department', 'creator', 'assignee', 'comments.user', 'attachments']);
+        $canViewAssignee = $user->can('issues.view_assignee');
+        $can_archive_issue = $user->can('issues.archive');
 
         return Inertia::render('Issues/Show', [
             'issue' => $issue,
-            'canComment' => $user->can('edit issues') || $issue->assigned_to === $user->id || $issue->created_by === $user->id
+            'canComment' => $user->can('issues.edit') || $issue->assigned_to === $user->id || $issue->created_by === $user->id,
+            'canViewAssignee' => $canViewAssignee,
+            'can_archive_issue' => $can_archive_issue,
         ]);
     }
 
@@ -151,26 +181,28 @@ class IssueController extends Controller
     {
         $user = auth()->user();
 
-        if (!$user->can('edit issues')) {
+        if (!$user->can('issues.edit')) {
             abort(403);
         }
 
         $departments = Department::where('is_active', true)->get();
         $users = User::with('roles')->get();
-        $canChangeStatus = $user->can('change issue status') &&
-            ($user->can('view all issues') || $issue->assigned_to === $user->id);
+        $canChangeStatus = $user->can('issues.change_status') &&
+            ($user->can('issues.view_all') || $issue->assigned_to === $user->id);
+        $canViewAssignee = $user->can('issues.view_assignee');
 
         return Inertia::render('Issues/Edit', [
             'issue' => $issue,
             'departments' => $departments,
-            'users' => $users,
-            'canChangeStatus' => $canChangeStatus
+            'users' =>       $users,
+            'canChangeStatus' => $canChangeStatus,
+            'canViewAssignee' => $canViewAssignee
         ]);
     }
 
     // public function update(Request $request, Issue $issue)
     // {
-    //     abort_unless(auth()->user()->can('edit issues'), 403);
+    //     abort_unless(auth()->user()->can('issues.edit'), 403);
 
     //     $validated = $request->validate([
     //         'title' => 'required|string|max:255',
@@ -209,7 +241,7 @@ class IssueController extends Controller
     // }
     public function update(Request $request, Issue $issue)
     {
-        abort_unless(auth()->user()->can('edit issues'), 403);
+        abort_unless(auth()->user()->can('issues.edit'), 403);
 
         $validated = $request->validate([
             'title' => 'required|string|max:255',
@@ -253,7 +285,7 @@ class IssueController extends Controller
     }
     // public function destroy(Issue $issue)
     // {
-    //     abort_unless(auth()->user()->can('delete issues'), 403);
+    //     abort_unless(auth()->user()->can('issues.delete'), 403);
 
     //     if ($issue->attachment) {
     //         Storage::disk('public')->delete($issue->attachment);
@@ -263,7 +295,7 @@ class IssueController extends Controller
     // }
     public function destroy(Issue $issue)
     {
-        abort_unless(auth()->user()->can('delete issues'), 403);
+        abort_unless(auth()->user()->can('issues.delete'), 403);
 
         // Delete all attachments associated with this issue
         foreach ($issue->attachments as $attachment) {
@@ -306,7 +338,7 @@ class IssueController extends Controller
 
     public function destroyComment(Comment $comment)
     {
-        if ($comment->user_id !== auth()->id() && !auth()->user()->can('delete issues')) {
+        if ($comment->user_id !== auth()->id() && !auth()->user()->can('issues.delete')) {
             abort(403);
         }
 
@@ -316,12 +348,19 @@ class IssueController extends Controller
 
     public function archived()
     {
-        abort_unless(auth()->user()->can('view all issues'), 403);
+        abort_unless(auth()->user()->can('issues.archive'), 403);
 
         $issues = Issue::with(['department', 'creator', 'assignee'])->whereNotNull('archived_at')->latest()->get();
 
         return Inertia::render('Issues/Archived', [
             'issues' => $issues,
         ]);
+    }
+
+    public function archive(Issue $issue)
+    {
+        abort_unless(auth()->user()->can('issues.archive'), 403);
+        $issue->update(['archived_at' => now()]);
+        return redirect()->route('issues.index')->with('success', 'Issue archived successfully.');
     }
 }

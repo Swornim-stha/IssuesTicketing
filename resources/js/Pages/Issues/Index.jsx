@@ -1,58 +1,43 @@
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Head, Link, router } from "@inertiajs/react";
-import { useState, useMemo } from "react";
+import { useState } from "react";
+import Pagination from "@/Components/Pagination"; // Import the Pagination component
 
-export default function Index({ auth, issues, departments /*users */ }) {
+export default function Index({ auth, issues, departments, users, filters: initialFilters, can_archive_issue }) {
     const [filters, setFilters] = useState({
-        department: "",
-        status: "",
-        priority: "",
-        search: "",
-        // assignee: "",
-        date: "",
+        search: initialFilters.search || "",
+        department: initialFilters.department || "",
+        status: initialFilters.status || "",
+        priority: initialFilters.priority || "",
+        assignee: initialFilters.assignee || "",
+        date: initialFilters.date || "",
     });
 
     const hasPermission = (permissionName) => {
-        return auth.user?.roles?.some((role) =>
-            role.permissions?.some((perm) => perm.name === permissionName)
-        );
+        if (!auth.user || !auth.user.permissions) {
+            return false;
+        }
+        return auth.user.permissions.includes(permissionName);
     };
 
-    const canViewAllIssues = hasPermission("view all issues");
+    const canViewAssignee = hasPermission("issues.view_assignee");
 
-    const filteredIssues = useMemo(() => {
-        return issues.filter((issue) => {
-            const matchesDepartment =
-                !filters.department ||
-                issue.department_id === parseInt(filters.department);
-            const matchesStatus =
-                !filters.status || issue.status === filters.status;
-            const matchesPriority =
-                !filters.priority || issue.priority === filters.priority;
-            const matchesSearch =
-                !filters.search ||
-                issue.title
-                    .toLowerCase()
-                    .includes(filters.search.toLowerCase()) ||
-                issue.description
-                    .toLowerCase()
-                    .includes(filters.search.toLowerCase());
-            // const matchesAssignee =
-            //     !filters.assignee ||
-            //     issue.assigned_to === parseInt(filters.assignee);
-            const matchesDate =
-                !filters.date || issue.created_at.startsWith(filters.date);
-
-            return (
-                matchesDepartment &&
-                matchesStatus &&
-                matchesPriority &&
-                matchesSearch &&
-                // matchesAssignee &&
-                matchesDate
-            );
+    // Function to apply filters by making a new Inertia request
+    const applyFilters = () => {
+        router.get(route("issues.index"), filters, {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
         });
-    }, [issues, filters]);
+    };
+
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFilters((prevFilters) => ({
+            ...prevFilters,
+            [name]: value,
+        }));
+    };
 
     const getPriorityColor = (priority) => {
         const colors = {
@@ -73,15 +58,6 @@ export default function Index({ auth, issues, departments /*users */ }) {
         };
         return colors[status] || "bg-gray-100 text-gray-800";
     };
-    // const getRowColor = (issue) => {
-    //     if (issue.assigned_to === auth.user.id) {
-    //         return "bg-green-100";
-    //     }
-    //     if (issue.assignee === null) {
-    //         return "bg-yellow-100";
-    //     }
-    //     return "";
-    // };
 
     const canDelete = (issue) => {
         const isAdmin = auth.user?.roles?.some((role) => role.name === "admin");
@@ -90,13 +66,19 @@ export default function Index({ auth, issues, departments /*users */ }) {
     };
 
     const resetFilters = () => {
-        setFilters({
+        const newFilters = {
             department: "",
             status: "",
             priority: "",
             search: "",
-            // assignee: "",
+            assignee: "",
             date: "",
+        };
+        setFilters(newFilters);
+        router.get(route("issues.index"), newFilters, {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
         });
     };
 
@@ -113,7 +95,7 @@ export default function Index({ auth, issues, departments /*users */ }) {
                                     Issues / Tickets
                                 </h2>
                                 <div className="flex gap-4">
-                                    {canViewAllIssues && (
+                                    {can_archive_issue && (
                                         <Link
                                             href={route("issues.archived")}
                                             className="rounded bg-gray-500 px-4 py-2 font-bold text-white hover:bg-gray-700"
@@ -138,13 +120,9 @@ export default function Index({ auth, issues, departments /*users */ }) {
                                     </label>
                                     <input
                                         type="text"
+                                        name="search"
                                         value={filters.search}
-                                        onChange={(e) =>
-                                            setFilters({
-                                                ...filters,
-                                                search: e.target.value,
-                                            })
-                                        }
+                                        onChange={handleChange}
                                         placeholder="Search issues..."
                                         className="w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                     />
@@ -156,13 +134,9 @@ export default function Index({ auth, issues, departments /*users */ }) {
                                             Department
                                         </label>
                                         <select
+                                            name="department"
                                             value={filters.department}
-                                            onChange={(e) =>
-                                                setFilters({
-                                                    ...filters,
-                                                    department: e.target.value,
-                                                })
-                                            }
+                                            onChange={handleChange}
                                             className="w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                         >
                                             <option value="">
@@ -185,13 +159,9 @@ export default function Index({ auth, issues, departments /*users */ }) {
                                         Status
                                     </label>
                                     <select
+                                        name="status"
                                         value={filters.status}
-                                        onChange={(e) =>
-                                            setFilters({
-                                                ...filters,
-                                                status: e.target.value,
-                                            })
-                                        }
+                                        onChange={handleChange}
                                         className="w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                     >
                                         <option value="">All Status</option>
@@ -211,13 +181,9 @@ export default function Index({ auth, issues, departments /*users */ }) {
                                         Priority
                                     </label>
                                     <select
+                                        name="priority"
                                         value={filters.priority}
-                                        onChange={(e) =>
-                                            setFilters({
-                                                ...filters,
-                                                priority: e.target.value,
-                                            })
-                                        }
+                                        onChange={handleChange}
                                         className="w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                     >
                                         <option value="">All Priorities</option>
@@ -229,31 +195,29 @@ export default function Index({ auth, issues, departments /*users */ }) {
                                         </option>
                                     </select>
                                 </div>
-                                {/* <div>
-                                    <label className="mb-1 block text-sm font-medium text-gray-700">
-                                        Assignee
-                                    </label>
-                                    <select
-                                        value={filters.assignee}
-                                        onChange={(e) =>
-                                            setFilters({
-                                                ...filters,
-                                                assignee: e.target.value,
-                                            })
-                                        }
-                                        className="w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                    >
-                                        <option value="">All Users</option>
-                                        {users.map((user) => (
-                                            <option
-                                                key={user.id}
-                                                value={user.id}
-                                            >
-                                                {user.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div> */}
+                                {canViewAssignee && (
+                                    <div>
+                                        <label className="mb-1 block text-sm font-medium text-gray-700">
+                                            Assignee
+                                        </label>
+                                        <select
+                                            name="assignee"
+                                            value={filters.assignee}
+                                            onChange={handleChange}
+                                            className="w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                        >
+                                            <option value="">All Users</option>
+                                            {users.map((user) => (
+                                                <option
+                                                    key={user.id}
+                                                    value={user.id}
+                                                >
+                                                    {user.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
 
                                 <div>
                                     <label className="mb-1 block text-sm font-medium text-gray-700">
@@ -261,31 +225,33 @@ export default function Index({ auth, issues, departments /*users */ }) {
                                     </label>
                                     <input
                                         type="date"
+                                        name="date"
                                         value={filters.date}
-                                        onChange={(e) =>
-                                            setFilters({
-                                                ...filters,
-                                                date: e.target.value,
-                                            })
-                                        }
+                                        onChange={handleChange}
                                         className="w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                     />
                                 </div>
 
-                                <div className="flex items-end">
+                                <div className="flex items-end space-x-2">
+                                    <button
+                                        onClick={applyFilters}
+                                        className="w-full rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+                                    >
+                                        Filter
+                                    </button>
                                     <button
                                         onClick={resetFilters}
                                         className="w-full rounded-md bg-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-300"
                                     >
-                                        Reset Filters
+                                        Reset
                                     </button>
                                 </div>
                             </div>
 
                             {/* Results count */}
                             <div className="mb-4 text-sm text-gray-600">
-                                Showing {filteredIssues.length} of{" "}
-                                {issues.length} issues
+                                Showing {issues.from || 0} to {issues.to || 0} of{" "}
+                                {issues.total || 0} issues
                             </div>
 
                             <div className="overflow-x-auto">
@@ -304,9 +270,11 @@ export default function Index({ auth, issues, departments /*users */ }) {
                                             <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                                                 Status
                                             </th>
-                                            {/* <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                                                Assigned To
-                                            </th> */}
+                                            {canViewAssignee && (
+                                                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                                                    Assigned To
+                                                </th>
+                                            )}
                                             <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                                                 Created At
                                             </th>
@@ -316,15 +284,10 @@ export default function Index({ auth, issues, departments /*users */ }) {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-200 bg-white">
-                                        {filteredIssues &&
-                                        filteredIssues.length > 0 ? (
-                                            filteredIssues.map((issue) => (
-                                                <tr
-                                                // key={issue.id}
-                                                // className={getRowColor(
-                                                //     issue
-                                                // )}
-                                                >
+                                        {issues.data &&
+                                        issues.data.length > 0 ? (
+                                            issues.data.map((issue) => (
+                                                <tr key={issue.id}>
                                                     <td className="px-6 py-4">
                                                         <div className="text-sm font-medium text-gray-900">
                                                             {issue.title}
@@ -366,10 +329,13 @@ export default function Index({ auth, issues, departments /*users */ }) {
                                                             )}
                                                         </span>
                                                     </td>
-                                                    {/* <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                                                        {issue.assignee?.name ||
-                                                            "Unassigned"}
-                                                    </td> */}
+                                                    {canViewAssignee && (
+                                                        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+                                                            {issue.assignee
+                                                                ?.name ||
+                                                                "Unassigned"}
+                                                        </td>
+                                                    )}
 
                                                     <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
                                                         {new Date(
@@ -429,7 +395,9 @@ export default function Index({ auth, issues, departments /*users */ }) {
                                         ) : (
                                             <tr>
                                                 <td
-                                                    colSpan="6"
+                                                    colSpan={
+                                                        canViewAssignee ? 7 : 6
+                                                    }
                                                     className="px-6 py-4 text-center text-gray-500"
                                                 >
                                                     No issues found matching
@@ -440,6 +408,8 @@ export default function Index({ auth, issues, departments /*users */ }) {
                                     </tbody>
                                 </table>
                             </div>
+                            <Pagination links={issues.links} />{" "}
+                            {/* Add the Pagination component here */}
                         </div>
                     </div>
                 </div>
