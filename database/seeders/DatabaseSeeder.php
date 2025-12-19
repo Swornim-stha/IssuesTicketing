@@ -16,31 +16,17 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->call([
-            RolesAndPermissionsSeeder::class,
-            PermissionSeeder::class,
-        ]);
+        $this->call(RolesAndPermissionsSeeder::class);
 
-        // Create the primary Test User and assign admin role
-        $user = User::firstOrCreate(
-            ['email' => 'test@example.com'],
+        // Create a super admin user
+        $adminUser = User::firstOrCreate(
+            ['email' => 'admin@example.com'],
             [
-                'name' => 'Test User',
+                'name' => 'Admin User',
                 'password' => bcrypt('password'),
             ]
         );
         $adminRole = Role::findByName('admin');
-        $user->assignRole($adminRole);
-
-        // Create a super admin user
-        $superAdmin = User::firstOrCreate(
-            ['email' => 'superadmin@example.com'],
-            [
-                'name' => 'Super Admin',
-                'password' => bcrypt('password'),
-            ]
-        );
-        $superAdminRole = Role::findByName('super-admin');
-        $superAdmin->assignRole($superAdminRole);
+        $adminUser->assignRole($adminRole);
     }
 }

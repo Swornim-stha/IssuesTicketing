@@ -5,10 +5,9 @@ namespace App\Notifications;
 use App\Models\Issue;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class NewIssueNotification extends Notification implements ShouldQueue
+class EmailFailedNotification extends Notification
 {
     use Queueable;
 
@@ -29,19 +28,7 @@ class NewIssueNotification extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        return ['mail', 'database'];
-    }
-
-    /**
-     * Get the mail representation of the notification.
-     */
-    public function toMail(object $notifiable): MailMessage
-    {
-        return (new MailMessage)
-            ->subject('New Issue Created: ' . $this->issue->title)
-            ->line('A new issue has been created: "' . $this->issue->title . '".')
-            ->action('View Issue', url('/issues/' . $this->issue->id))
-            ->line('Thank you for using our application!');
+        return ['database'];
     }
 
     /**
@@ -54,7 +41,7 @@ class NewIssueNotification extends Notification implements ShouldQueue
         return [
             'issue_id' => $this->issue->id,
             'title' => $this->issue->title,
-            'message' => 'A new issue has been created: "' . $this->issue->title . '"',
+            'message' => 'Failed to send email notification for issue: "' . $this->issue->title . '".',
         ];
     }
 }

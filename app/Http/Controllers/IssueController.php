@@ -65,12 +65,17 @@ class IssueController extends Controller
         // Fetch all users to populate the assignee filter dropdown, if needed
         $users = User::all();
         $can_archive_issue = $user->can('issues.archive');
+        $can_view_assignee = $user->can('issues.view_assignee');
+        $can_delete_issues = $user->can('issues.delete');
+
         return Inertia::render('Issues/Index', [
             'issues' => $issues,
             'departments' => $departments,
             'users' => $users,
             'filters' => $request->all(['search', 'department', 'status', 'priority', 'assignee', 'date']), // Pass current filters back to the frontend
             'can_archive_issue' => $can_archive_issue,
+            'can_view_assignee' => $can_view_assignee,
+            'can_delete_issues' => $can_delete_issues,
         ]);
     }
 

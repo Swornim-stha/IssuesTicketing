@@ -3,7 +3,16 @@ import { Head, Link, router } from "@inertiajs/react";
 import { useState } from "react";
 import Pagination from "@/Components/Pagination"; // Import the Pagination component
 
-export default function Index({ auth, issues, departments, users, filters: initialFilters, can_archive_issue }) {
+export default function Index({
+    auth,
+    issues,
+    departments,
+    users,
+    filters: initialFilters,
+    can_archive_issue,
+    can_view_assignee,
+    can_delete_issues,
+}) {
     const [filters, setFilters] = useState({
         search: initialFilters.search || "",
         department: initialFilters.department || "",
@@ -12,15 +21,6 @@ export default function Index({ auth, issues, departments, users, filters: initi
         assignee: initialFilters.assignee || "",
         date: initialFilters.date || "",
     });
-
-    const hasPermission = (permissionName) => {
-        if (!auth.user || !auth.user.permissions) {
-            return false;
-        }
-        return auth.user.permissions.includes(permissionName);
-    };
-
-    const canViewAssignee = hasPermission("issues.view_assignee");
 
     // Function to apply filters by making a new Inertia request
     const applyFilters = () => {
@@ -60,9 +60,8 @@ export default function Index({ auth, issues, departments, users, filters: initi
     };
 
     const canDelete = (issue) => {
-        const isAdmin = auth.user?.roles?.some((role) => role.name === "admin");
         const isCreator = issue.created_by === auth.user.id;
-        return isAdmin || isCreator;
+        return can_delete_issues || isCreator;
     };
 
     const resetFilters = () => {
@@ -195,7 +194,7 @@ export default function Index({ auth, issues, departments, users, filters: initi
                                         </option>
                                     </select>
                                 </div>
-                                {canViewAssignee && (
+                                {can_view_assignee && (
                                     <div>
                                         <label className="mb-1 block text-sm font-medium text-gray-700">
                                             Assignee
@@ -270,7 +269,7 @@ export default function Index({ auth, issues, departments, users, filters: initi
                                             <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                                                 Status
                                             </th>
-                                            {canViewAssignee && (
+                                            {can_view_assignee && (
                                                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                                                     Assigned To
                                                 </th>
@@ -329,7 +328,7 @@ export default function Index({ auth, issues, departments, users, filters: initi
                                                             )}
                                                         </span>
                                                     </td>
-                                                    {canViewAssignee && (
+                                                    {can_view_assignee && (
                                                         <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
                                                             {issue.assignee
                                                                 ?.name ||
@@ -396,7 +395,7 @@ export default function Index({ auth, issues, departments, users, filters: initi
                                             <tr>
                                                 <td
                                                     colSpan={
-                                                        canViewAssignee ? 7 : 6
+                                                        can_view_assignee ? 7 : 6
                                                     }
                                                     className="px-6 py-4 text-center text-gray-500"
                                                 >
@@ -417,3 +416,4 @@ export default function Index({ auth, issues, departments, users, filters: initi
         </AuthenticatedLayout>
     );
 }
+
