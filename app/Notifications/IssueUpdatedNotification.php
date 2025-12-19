@@ -6,9 +6,10 @@ use App\Models\Issue;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class IssueUpdatedNotification extends Notification
+class IssueUpdatedNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
@@ -33,7 +34,20 @@ class IssueUpdatedNotification extends Notification
      */
     public function via(object $notifiable): array
     {
-        return ['database'];
+        return ['mail', 'database'];
+    }
+
+    /**
+     * Get the mail representation of the notification.
+     */
+    public function toMail(object $notifiable): MailMessage
+    {
+        return (new MailMessage)
+            ->subject('Issue Updated: ' . $this->issue->title)
+            ->line($this->message)
+            ->line('This update was made by ' . $this->updatingUser->name . '.')
+            ->action('View Issue', url('/issues/' . $this->issue->id))
+            ->line('Thank you for using our application!');
     }
 
     /**

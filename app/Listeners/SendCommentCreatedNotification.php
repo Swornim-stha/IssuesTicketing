@@ -8,8 +8,10 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Facades\Mail;
 
-class SendCommentCreatedNotification
+class SendCommentCreatedNotification implements ShouldQueue
 {
+    use InteractsWithQueue;
+
     /**
      * Create the event listener.
      */
@@ -27,29 +29,26 @@ class SendCommentCreatedNotification
         $issue = $comment->issue;
         $commenter = $comment->user;
 
-        $recipient = null;
+        $recipients = collect();
 
         // If commenter is the assignee, notify the creator
         if ($issue->assignee && $commenter->id === $issue->assignee->id) {
-            $recipient = $issue->creator;
-        } 
+            $recipients->push($issue->creator);
+        }
         // If commenter is the creator, notify the assignee
         elseif ($commenter->id === $issue->creator->id) {
-            $recipient = $issue->assignee;
-        } 
+            $recipients->push($issue->assignee);
+        }
         // If commenter is another user, notify both creator and assignee
         else {
-            if ($issue->creator) {
-                Mail::to($issue->creator->email)->send(new NewCommentNotification($comment));
-            }
-            if ($issue->assignee && $issue->assignee->id !== $issue->creator->id) {
-                Mail::to($issue->assignee->email)->send(new NewCommentNotification($comment));
-            }
-            return;
+            $recipients->push($issue->creator);
+            $recipients->push($issue->assignee);
         }
 
-        if ($recipient) {
-            Mail::to($recipient->email)->send(new NewCommentNotification($comment));
+        $recipients = $recipients->filter()->unique('id');
+
+        foreach ($recipients as $recipient) {
+            Mail::to($recipient->email)->queue(new NewCommentNotification($comment));
         }
     }
 }

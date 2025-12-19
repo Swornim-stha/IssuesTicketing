@@ -3,15 +3,16 @@
 namespace App\Listeners;
 
 use App\Events\IssueUpdated;
-use App\Mail\IssueUpdatedNotification;
+use App\Mail\IssueUpdatedNotification as MailIssueUpdatedNotification;
 use App\Models\User;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Arr;
 
-class SendIssueUpdatedNotification
+class SendIssueUpdatedNotification implements ShouldQueue
 {
+    use InteractsWithQueue;
     /**
      * Create the event listener.
      */
@@ -84,7 +85,7 @@ class SendIssueUpdatedNotification
         $recipients = $recipients->unique('id');
 
         foreach ($recipients as $recipient) {
-            Mail::to($recipient->email)->send(new IssueUpdatedNotification($issue, $changes));
+            Mail::to($recipient->email)->queue(new MailIssueUpdatedNotification($issue, $changes));
         }
     }
 }
