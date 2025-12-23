@@ -12,6 +12,10 @@ use Inertia\Inertia;
 use Illuminate\Support\Facades\Storage;
 use App\Events\IssueCreated;
 use App\Events\IssueUpdated;
+use App\Events\IssueClosed;
+use App\Events\IssueDeleted;
+use App\Events\IssueResolved;
+use Illuminate\Notifications\DatabaseNotification;
 
 class IssueController extends Controller
 {
@@ -261,6 +265,8 @@ class IssueController extends Controller
         ]);
 
         $originalData = $issue->getOriginal();
+        $originalStatus = $issue->status;
+        $updater = auth()->user();
 
         if ($request->hasFile('attachments')) {
             foreach ($request->file('attachments') as $file) {
@@ -275,17 +281,27 @@ class IssueController extends Controller
             }
         }
 
-        if ($validated['status'] === 'resolved' && $issue->status !== 'resolved') {
+        if ($validated['status'] === 'resolved' && $originalStatus !== 'resolved') {
             $validated['resolved_at'] = now();
         }
 
-        if ($validated['status'] === 'closed' && $issue->status !== 'closed') {
+        if ($validated['status'] === 'closed' && $originalStatus !== 'closed') {
             $validated['closed_at'] = now();
-            $validated['archived_at'] = now();
         }
 
         $issue->update($validated);
-        event(new IssueUpdated($issue, $originalData, auth()->user()));
+
+        // Fire existing general update event
+        event(new IssueUpdated($issue, $originalData, $updater));
+
+        // Fire new specific events without breaking the old ones
+        if ($validated['status'] === 'resolved' && $originalStatus !== 'resolved') {
+            event(new IssueResolved($issue, $updater));
+        }
+        if ($validated['status'] === 'closed' && $originalStatus !== 'closed') {
+            event(new IssueClosed($issue, $updater));
+        }
+
         return redirect()->route('issues.index')->with('success', 'Issue updated.');
     }
     // public function destroy(Issue $issue)
@@ -301,6 +317,27 @@ class IssueController extends Controller
     public function destroy(Issue $issue)
     {
         abort_unless(auth()->user()->can('issues.delete'), 403);
+
+        $deleter = auth()->user();
+        $issueId = $issue->id;
+        $issueTitle = $issue->title;
+
+        // Delete notifications related to this issue
+        DatabaseNotification::where(function ($query) use ($issueId) {
+            $query->whereJsonContains('data->issue_id', $issueId)
+                  ->orWhereJsonContains('data->url', "/issues/{$issueId}");
+        })
+        ->delete();
+
+        // Determine recipients before the issue is deleted
+        $recipients = collect([$issue->creator, $issue->assignee, $issue->department->head])
+            ->filter()
+            ->unique('id')
+            ->reject(fn ($user) => $user->id === $deleter->id)
+            ->pluck('id')->all();
+
+        // Fire the deleted event before the issue is gone
+        event(new IssueDeleted($issueId, $issueTitle, $recipients, $deleter));
 
         // Delete all attachments associated with this issue
         foreach ($issue->attachments as $attachment) {

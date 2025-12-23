@@ -40,23 +40,25 @@ export default function Dashboard({
         <AuthenticatedLayout
             header={
                 <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold leading-tight text-gray-800">
-                        Dashboard
-                    </h2>
-                    {departments && departments.length > 0 && (
-                        <select
-                            value={selectedDepartment || ""}
-                            onChange={handleDepartmentChange}
-                            className="rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                        >
-                            <option value="">All Departments</option>
-                            {departments.map((dept) => (
-                                <option key={dept.id} value={dept.id}>
-                                    {dept.name}
-                                </option>
-                            ))}
-                        </select>
-                    )}
+                    <div className="flex items-center gap-4">
+                        <h2 className="text-xl font-semibold leading-tight text-gray-800">
+                            Dashboard
+                        </h2>
+                        {departments && departments.length > 0 && (
+                            <select
+                                value={selectedDepartment || ""}
+                                onChange={handleDepartmentChange}
+                                className="rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            >
+                                <option value="">All Departments</option>
+                                {departments.map((dept) => (
+                                    <option key={dept.id} value={dept.id}>
+                                        {dept.name}
+                                    </option>
+                                ))}
+                            </select>
+                        )}
+                    </div>
                 </div>
             }
         >

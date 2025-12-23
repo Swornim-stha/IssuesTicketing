@@ -24,8 +24,8 @@ class DashboardController extends Controller
             if ($departmentId) {
                 $query->where('department_id', $departmentId);
             }
-        } elseif ($user->can('view department issues')) {
-            // Director/Employee sees their department
+        } elseif ($user->department_id) {
+            // User with a department sees issues from their department, assigned to them, or created by them
             $query->where(function ($q) use ($user) {
                 $q->where('department_id', $user->department_id)
                     ->orWhere('assigned_to', $user->id)
